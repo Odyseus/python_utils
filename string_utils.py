@@ -11,8 +11,6 @@ from . import file_utils
 def split_on_uppercase(string, keep_contiguous=True):
     """Split string on uppercase.
 
-    Based on `an answer <https://stackoverflow.com/a/40382663>`__ from a StackOverflow question.
-
     Parameters
     ----------
     string : str
@@ -24,6 +22,10 @@ def split_on_uppercase(string, keep_contiguous=True):
     -------
     list
         The parts of the passed string.
+
+    Note
+    ----
+    Based on: `Split a string at uppercase letters <https://stackoverflow.com/a/40382663>`__
     """
 
     string_length = len(string)
