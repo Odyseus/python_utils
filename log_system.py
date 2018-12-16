@@ -126,7 +126,7 @@ class LogSystem():
         msg : str
             See :any:`LogSystem._update_log` > msg
         """
-        self._update_log("[DRY_RUN] %s" % str(msg), log_level="LIGHT_MAGENTA", date=False)
+        self._update_log("**[DRY_RUN]** %s" % str(msg), log_level="LIGHT_MAGENTA", date=False)
 
     def _update_log(self, msg, log_level="ERROR", term=True, date=True):
         """Do the actual logging.
