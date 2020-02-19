@@ -54,6 +54,7 @@ def check_inventories_existence(update_inventories=False,
             inv_path = os.path.join(docs_sources_path, inv)
 
             if update_inventories or not os.path.exists(inv_path):
+                os.makedirs(os.path.dirname(inv_path), exist_ok=True)
                 logger.info("**Downloading inventory file...**")
                 logger.info("**Download URL:**")
                 logger.info(inv_url, date=False)
