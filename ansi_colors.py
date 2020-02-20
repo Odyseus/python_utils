@@ -95,6 +95,11 @@ class ANSIColors():
         ----------
         code : str
             ANSI color code.
+
+        Returns
+        -------
+        method
+            A function that will be dynamically attached to ``self``.
         """
         def f(text):
             """Colorize text.
@@ -106,8 +111,8 @@ class ANSIColors():
 
             Returns
             -------
-            str
-                ANSI formatted string.
+            method
+                The ``self._colorize`` function with a specific ANSI color code attached.
             """
             return self._colorize(text, code)
 
