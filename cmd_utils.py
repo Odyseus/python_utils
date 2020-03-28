@@ -18,8 +18,12 @@ from subprocess import DEVNULL
 from subprocess import PIPE
 from subprocess import Popen
 from subprocess import call
-from subprocess import run
 
+# Mediocre workaround for mediocre applications that still use Python version 3.3! FFS!!!
+try:
+    from subprocess import run
+except (ImportError, SystemError):
+    pass
 
 STREAM_STDOUT = 1
 STREAM_STDERR = 2
