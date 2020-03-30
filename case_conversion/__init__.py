@@ -23,11 +23,12 @@ __all__ = [
     "dotcase",
     "separate_words",
     "slashcase",
-    "backslashcase"
+    "backslashcase",
+    "parse_case"
 ]
 
 
-def _parse_case(var, detect_acronyms=True, acronyms=[], preserve_case=False):
+def parse_case(var, detect_acronyms=True, acronyms=[], preserve_case=False):
     """
     Parses a variable into a list of words.
     Also returns the case type, which can be one of the following:
@@ -314,7 +315,7 @@ def camelcase(text, detect_acronyms=False, acronyms=[]):
     TYPE
         Description
     """
-    words, case, sep = _parse_case(text, detect_acronyms, acronyms)
+    words, case, sep = parse_case(text, detect_acronyms, acronyms)
     if words:
         words[0] = words[0].lower()
     return "".join(words)
@@ -344,7 +345,7 @@ def pascalcase(text, detect_acronyms=False, acronyms=[]):
     TYPE
         Description
     """
-    words, case, sep = _parse_case(text, detect_acronyms, acronyms)
+    words, case, sep = parse_case(text, detect_acronyms, acronyms)
     return "".join(words)
 
 
@@ -372,7 +373,7 @@ def snakecase(text, detect_acronyms=False, acronyms=[]):
     TYPE
         Description
     """
-    words, case, sep = _parse_case(text, detect_acronyms, acronyms)
+    words, case, sep = parse_case(text, detect_acronyms, acronyms)
     return "_".join([w.lower() for w in words])
 
 
@@ -400,7 +401,7 @@ def dashcase(text, detect_acronyms=False, acronyms=[]):
     TYPE
         Description
     """
-    words, case, sep = _parse_case(text, detect_acronyms, acronyms)
+    words, case, sep = parse_case(text, detect_acronyms, acronyms)
     return "-".join([w.lower() for w in words])
 
 
@@ -482,7 +483,7 @@ def constcase(text, detect_acronyms=False, acronyms=[]):
     TYPE
         Description
     """
-    words, case, sep = _parse_case(text, detect_acronyms, acronyms)
+    words, case, sep = parse_case(text, detect_acronyms, acronyms)
     return "_".join([w.upper() for w in words])
 
 
@@ -537,7 +538,7 @@ def dotcase(text, detect_acronyms=False, acronyms=[]):
     TYPE
         Description
     """
-    words, case, sep = _parse_case(text, detect_acronyms, acronyms)
+    words, case, sep = parse_case(text, detect_acronyms, acronyms)
     return ".".join([w.lower() for w in words])
 
 
@@ -565,7 +566,7 @@ def separate_words(text, detect_acronyms=False, acronyms=[]):
     TYPE
         Description
     """
-    words, case, sep = _parse_case(
+    words, case, sep = parse_case(
         text, detect_acronyms, acronyms, preserve_case=True)
     return " ".join(words)
 
@@ -594,7 +595,7 @@ def slashcase(text, detect_acronyms=False, acronyms=[]):
     TYPE
         Description
     """
-    words, case, sep = _parse_case(
+    words, case, sep = parse_case(
         text, detect_acronyms, acronyms, preserve_case=True)
     return "/".join(words)
 
@@ -623,7 +624,7 @@ def backslashcase(text, detect_acronyms=False, acronyms=[]):
     TYPE
         Description
     """
-    words, case, sep = _parse_case(
+    words, case, sep = parse_case(
         text, detect_acronyms, acronyms, preserve_case=True)
     return "\\".join(words)
 
