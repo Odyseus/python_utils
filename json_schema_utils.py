@@ -3,7 +3,7 @@
 """
 import json
 
-from collections import Callable
+from collections.abc import Callable
 from copy import deepcopy
 
 from . import shell_utils
