@@ -456,5 +456,32 @@ def get_folder_size(dir_path):
     return total
 
 
+def recursive_dirlist(root_dir):
+    """Recusively get a list of all folder paths in a directory.
+
+    Parameters
+    ----------
+    root_dir : str
+        Root directory.
+
+    Returns
+    -------
+    list
+        List of all folder paths inside ``root_dir``.
+
+    Todo
+    ----
+    Add some limiting mechanism to avoid scaning vast amounts of directories.
+    """
+    subfolders = [f.path for f in os.scandir(root_dir) if f.is_dir()]
+
+    for dir in subfolders:
+        subfolders.extend(recursive_dirlist(dir))
+
+    subfolders.sort()
+
+    return subfolders
+
+
 if __name__ == "__main__":
     pass
