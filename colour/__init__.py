@@ -35,7 +35,6 @@ Please see the documentation of this object for more information.
 """
 import hashlib
 import re
-import sys
 
 
 ##
@@ -47,167 +46,169 @@ FLOAT_ERROR = 0.0000005
 
 
 RGB_TO_COLOR_NAMES = {
-    (0, 0, 0): ['Black'],
-    (0, 0, 128): ['Navy', 'NavyBlue'],
-    (0, 0, 139): ['DarkBlue'],
-    (0, 0, 205): ['MediumBlue'],
-    (0, 0, 255): ['Blue'],
-    (0, 100, 0): ['DarkGreen'],
-    (0, 128, 0): ['Green'],
-    (0, 139, 139): ['DarkCyan'],
-    (0, 191, 255): ['DeepSkyBlue'],
-    (0, 206, 209): ['DarkTurquoise'],
-    (0, 250, 154): ['MediumSpringGreen'],
-    (0, 255, 0): ['Lime'],
-    (0, 255, 127): ['SpringGreen'],
-    (0, 255, 255): ['Cyan', 'Aqua'],
-    (25, 25, 112): ['MidnightBlue'],
-    (30, 144, 255): ['DodgerBlue'],
-    (32, 178, 170): ['LightSeaGreen'],
-    (34, 139, 34): ['ForestGreen'],
-    (46, 139, 87): ['SeaGreen'],
-    (47, 79, 79): ['DarkSlateGray', 'DarkSlateGrey'],
-    (50, 205, 50): ['LimeGreen'],
-    (60, 179, 113): ['MediumSeaGreen'],
-    (64, 224, 208): ['Turquoise'],
-    (65, 105, 225): ['RoyalBlue'],
-    (70, 130, 180): ['SteelBlue'],
-    (72, 61, 139): ['DarkSlateBlue'],
-    (72, 209, 204): ['MediumTurquoise'],
-    (75, 0, 130): ['Indigo'],
-    (85, 107, 47): ['DarkOliveGreen'],
-    (95, 158, 160): ['CadetBlue'],
-    (100, 149, 237): ['CornflowerBlue'],
-    (102, 205, 170): ['MediumAquamarine'],
-    (105, 105, 105): ['DimGray', 'DimGrey'],
-    (106, 90, 205): ['SlateBlue'],
-    (107, 142, 35): ['OliveDrab'],
-    (112, 128, 144): ['SlateGray', 'SlateGrey'],
-    (119, 136, 153): ['LightSlateGray', 'LightSlateGrey'],
-    (123, 104, 238): ['MediumSlateBlue'],
-    (124, 252, 0): ['LawnGreen'],
-    (127, 255, 0): ['Chartreuse'],
-    (127, 255, 212): ['Aquamarine'],
-    (128, 0, 0): ['Maroon'],
-    (128, 0, 128): ['Purple'],
-    (128, 128, 0): ['Olive'],
-    (128, 128, 128): ['Gray', 'Grey'],
-    (132, 112, 255): ['LightSlateBlue'],
-    (135, 206, 235): ['SkyBlue'],
-    (135, 206, 250): ['LightSkyBlue'],
-    (138, 43, 226): ['BlueViolet'],
-    (139, 0, 0): ['DarkRed'],
-    (139, 0, 139): ['DarkMagenta'],
-    (139, 69, 19): ['SaddleBrown'],
-    (143, 188, 143): ['DarkSeaGreen'],
-    (144, 238, 144): ['LightGreen'],
-    (147, 112, 219): ['MediumPurple'],
-    (148, 0, 211): ['DarkViolet'],
-    (152, 251, 152): ['PaleGreen'],
-    (153, 50, 204): ['DarkOrchid'],
-    (154, 205, 50): ['YellowGreen'],
-    (160, 82, 45): ['Sienna'],
-    (165, 42, 42): ['Brown'],
-    (169, 169, 169): ['DarkGray', 'DarkGrey'],
-    (173, 216, 230): ['LightBlue'],
-    (173, 255, 47): ['GreenYellow'],
-    (175, 238, 238): ['PaleTurquoise'],
-    (176, 196, 222): ['LightSteelBlue'],
-    (176, 224, 230): ['PowderBlue'],
-    (178, 34, 34): ['Firebrick'],
-    (184, 134, 11): ['DarkGoldenrod'],
-    (186, 85, 211): ['MediumOrchid'],
-    (188, 143, 143): ['RosyBrown'],
-    (189, 183, 107): ['DarkKhaki'],
-    (192, 192, 192): ['Silver'],
-    (199, 21, 133): ['MediumVioletRed'],
-    (205, 92, 92): ['IndianRed'],
-    (205, 133, 63): ['Peru'],
-    (208, 32, 144): ['VioletRed'],
-    (210, 105, 30): ['Chocolate'],
-    (210, 180, 140): ['Tan'],
-    (211, 211, 211): ['LightGray', 'LightGrey'],
-    (216, 191, 216): ['Thistle'],
-    (218, 112, 214): ['Orchid'],
-    (218, 165, 32): ['Goldenrod'],
-    (219, 112, 147): ['PaleVioletRed'],
-    (220, 20, 60): ['Crimson'],
-    (220, 220, 220): ['Gainsboro'],
-    (221, 160, 221): ['Plum'],
-    (222, 184, 135): ['Burlywood'],
-    (224, 255, 255): ['LightCyan'],
-    (230, 230, 250): ['Lavender'],
-    (233, 150, 122): ['DarkSalmon'],
-    (238, 130, 238): ['Violet'],
-    (238, 221, 130): ['LightGoldenrod'],
-    (238, 232, 170): ['PaleGoldenrod'],
-    (240, 128, 128): ['LightCoral'],
-    (240, 230, 140): ['Khaki'],
-    (240, 248, 255): ['AliceBlue'],
-    (240, 255, 240): ['Honeydew'],
-    (240, 255, 255): ['Azure'],
-    (244, 164, 96): ['SandyBrown'],
-    (245, 222, 179): ['Wheat'],
-    (245, 245, 220): ['Beige'],
-    (245, 245, 245): ['WhiteSmoke'],
-    (245, 255, 250): ['MintCream'],
-    (248, 248, 255): ['GhostWhite'],
-    (250, 128, 114): ['Salmon'],
-    (250, 235, 215): ['AntiqueWhite'],
-    (250, 240, 230): ['Linen'],
-    (250, 250, 210): ['LightGoldenrodYellow'],
-    (253, 245, 230): ['OldLace'],
-    (255, 0, 0): ['Red'],
-    (255, 0, 255): ['Magenta', 'Fuchsia'],
-    (255, 20, 147): ['DeepPink'],
-    (255, 69, 0): ['OrangeRed'],
-    (255, 99, 71): ['Tomato'],
-    (255, 105, 180): ['HotPink'],
-    (255, 127, 80): ['Coral'],
-    (255, 140, 0): ['DarkOrange'],
-    (255, 160, 122): ['LightSalmon'],
-    (255, 165, 0): ['Orange'],
-    (255, 182, 193): ['LightPink'],
-    (255, 192, 203): ['Pink'],
-    (255, 215, 0): ['Gold'],
-    (255, 218, 185): ['PeachPuff'],
-    (255, 222, 173): ['NavajoWhite'],
-    (255, 228, 181): ['Moccasin'],
-    (255, 228, 196): ['Bisque'],
-    (255, 228, 225): ['MistyRose'],
-    (255, 235, 205): ['BlanchedAlmond'],
-    (255, 239, 213): ['PapayaWhip'],
-    (255, 240, 245): ['LavenderBlush'],
-    (255, 245, 238): ['Seashell'],
-    (255, 248, 220): ['Cornsilk'],
-    (255, 250, 205): ['LemonChiffon'],
-    (255, 250, 240): ['FloralWhite'],
-    (255, 250, 250): ['Snow'],
-    (255, 255, 0): ['Yellow'],
-    (255, 255, 224): ['LightYellow'],
-    (255, 255, 240): ['Ivory'],
-    (255, 255, 255): ['White']
+    (0, 0, 0): ["black"],
+    (0, 0, 128): ["navy", "navyblue"],
+    (0, 0, 139): ["darkblue"],
+    (0, 0, 205): ["mediumblue"],
+    (0, 0, 255): ["blue"],
+    (0, 100, 0): ["darkgreen"],
+    (0, 128, 0): ["green"],
+    (0, 128, 128): ["teal"],
+    (0, 139, 139): ["darkcyan"],
+    (0, 191, 255): ["deepskyblue"],
+    (0, 206, 209): ["darkturquoise"],
+    (0, 250, 154): ["mediumspringgreen"],
+    (0, 255, 0): ["lime"],
+    (0, 255, 127): ["springgreen"],
+    (0, 255, 255): ["aqua", "cyan"],
+    (100, 149, 237): ["cornflowerblue"],
+    (102, 205, 170): ["mediumaquamarine"],
+    (102, 51, 153): ["rebeccapurple"],
+    (105, 105, 105): ["dimgray", "dimgrey"],
+    (106, 90, 205): ["slateblue"],
+    (107, 142, 35): ["olivedrab"],
+    (112, 128, 144): ["slategray", "slategrey"],
+    (119, 136, 153): ["lightslategray", "lightslategrey"],
+    (123, 104, 238): ["mediumslateblue"],
+    (124, 252, 0): ["lawngreen"],
+    (127, 255, 0): ["chartreuse"],
+    (127, 255, 212): ["aquamarine"],
+    (128, 0, 0): ["maroon"],
+    (128, 0, 128): ["purple"],
+    (128, 128, 0): ["olive"],
+    (128, 128, 128): ["gray", "grey"],
+    (132, 112, 255): ["lightslateblue"],
+    (135, 206, 235): ["skyblue"],
+    (135, 206, 250): ["lightskyblue"],
+    (138, 43, 226): ["blueviolet"],
+    (139, 0, 0): ["darkred"],
+    (139, 0, 139): ["darkmagenta"],
+    (139, 69, 19): ["saddlebrown"],
+    (143, 188, 143): ["darkseagreen"],
+    (144, 238, 144): ["lightgreen"],
+    (147, 112, 219): ["mediumpurple"],
+    (148, 0, 211): ["darkviolet"],
+    (152, 251, 152): ["palegreen"],
+    (153, 50, 204): ["darkorchid"],
+    (154, 205, 50): ["yellowgreen"],
+    (160, 82, 45): ["sienna"],
+    (165, 42, 42): ["brown"],
+    (169, 169, 169): ["darkgray", "darkgrey"],
+    (173, 216, 230): ["lightblue"],
+    (173, 255, 47): ["greenyellow"],
+    (175, 238, 238): ["paleturquoise"],
+    (176, 196, 222): ["lightsteelblue"],
+    (176, 224, 230): ["powderblue"],
+    (178, 34, 34): ["firebrick"],
+    (184, 134, 11): ["darkgoldenrod"],
+    (186, 85, 211): ["mediumorchid"],
+    (188, 143, 143): ["rosybrown"],
+    (189, 183, 107): ["darkkhaki"],
+    (192, 192, 192): ["silver"],
+    (199, 21, 133): ["mediumvioletred"],
+    (205, 133, 63): ["peru"],
+    (205, 92, 92): ["indianred"],
+    (208, 32, 144): ["violetred"],
+    (210, 105, 30): ["chocolate"],
+    (210, 180, 140): ["tan"],
+    (211, 211, 211): ["lightgray", "lightgrey"],
+    (216, 191, 216): ["thistle"],
+    (218, 112, 214): ["orchid"],
+    (218, 165, 32): ["goldenrod"],
+    (219, 112, 147): ["palevioletred"],
+    (220, 20, 60): ["crimson"],
+    (220, 220, 220): ["gainsboro"],
+    (221, 160, 221): ["plum"],
+    (222, 184, 135): ["burlywood"],
+    (224, 255, 255): ["lightcyan"],
+    (230, 230, 250): ["lavender"],
+    (233, 150, 122): ["darksalmon"],
+    (238, 130, 238): ["violet"],
+    (238, 221, 130): ["lightgoldenrod"],
+    (238, 232, 170): ["palegoldenrod"],
+    (240, 128, 128): ["lightcoral"],
+    (240, 230, 140): ["khaki"],
+    (240, 248, 255): ["aliceblue"],
+    (240, 255, 240): ["honeydew"],
+    (240, 255, 255): ["azure"],
+    (244, 164, 96): ["sandybrown"],
+    (245, 222, 179): ["wheat"],
+    (245, 245, 220): ["beige"],
+    (245, 245, 245): ["whitesmoke"],
+    (245, 255, 250): ["mintcream"],
+    (248, 248, 255): ["ghostwhite"],
+    (25, 25, 112): ["midnightblue"],
+    (250, 128, 114): ["salmon"],
+    (250, 235, 215): ["antiquewhite"],
+    (250, 240, 230): ["linen"],
+    (250, 250, 210): ["lightgoldenrodyellow"],
+    (253, 245, 230): ["oldlace"],
+    (255, 0, 0): ["red"],
+    (255, 0, 255): ["fuchsia", "magenta"],
+    (255, 105, 180): ["hotpink"],
+    (255, 127, 80): ["coral"],
+    (255, 140, 0): ["darkorange"],
+    (255, 160, 122): ["lightsalmon"],
+    (255, 165, 0): ["orange"],
+    (255, 182, 193): ["lightpink"],
+    (255, 192, 203): ["pink"],
+    (255, 20, 147): ["deeppink"],
+    (255, 215, 0): ["gold"],
+    (255, 218, 185): ["peachpuff"],
+    (255, 222, 173): ["navajowhite"],
+    (255, 228, 181): ["moccasin"],
+    (255, 228, 196): ["bisque"],
+    (255, 228, 225): ["mistyrose"],
+    (255, 235, 205): ["blanchedalmond"],
+    (255, 239, 213): ["papayawhip"],
+    (255, 240, 245): ["lavenderblush"],
+    (255, 245, 238): ["seashell"],
+    (255, 248, 220): ["cornsilk"],
+    (255, 250, 205): ["lemonchiffon"],
+    (255, 250, 240): ["floralwhite"],
+    (255, 250, 250): ["snow"],
+    (255, 255, 0): ["yellow"],
+    (255, 255, 224): ["lightyellow"],
+    (255, 255, 240): ["ivory"],
+    (255, 255, 255): ["white"],
+    (255, 69, 0): ["orangered"],
+    (255, 99, 71): ["tomato"],
+    (30, 144, 255): ["dodgerblue"],
+    (32, 178, 170): ["lightseagreen"],
+    (34, 139, 34): ["forestgreen"],
+    (46, 139, 87): ["seagreen"],
+    (47, 79, 79): ["darkslategray", "darkslategrey"],
+    (50, 205, 50): ["limegreen"],
+    (60, 179, 113): ["mediumseagreen"],
+    (64, 224, 208): ["turquoise"],
+    (65, 105, 225): ["royalblue"],
+    (70, 130, 180): ["steelblue"],
+    (72, 209, 204): ["mediumturquoise"],
+    (72, 61, 139): ["darkslateblue"],
+    (75, 0, 130): ["indigo"],
+    (85, 107, 47): ["darkolivegreen"],
+    (95, 158, 160): ["cadetblue"],
 }
+
 
 # Building inverse relation
 COLOR_NAME_TO_RGB = dict(
-    (name.lower(), rgb)
-    for rgb, names in RGB_TO_COLOR_NAMES.items()
-    for name in names)
+    (name.lower(), rgb) for rgb, names in RGB_TO_COLOR_NAMES.items() for name in names
+)
 
 
-LONG_HEX_COLOR = re.compile(r'^#[0-9a-fA-F]{6}$')
-SHORT_HEX_COLOR = re.compile(r'^#[0-9a-fA-F]{3}$')
+LONG_HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+SHORT_HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{3}$")
 
 
 class C_HSL:
-
     def __getattr__(self, value):
         label = value.lower()
         if label in COLOR_NAME_TO_RGB:
-            return rgb2hsl(tuple(v / 255. for v in COLOR_NAME_TO_RGB[label]))
-        raise AttributeError("%s instance has no attribute %r"
-                             % (self.__class__, value))
+            return rgb2hsl(tuple(v / 255.0 for v in COLOR_NAME_TO_RGB[label]))
+        raise AttributeError(
+            "%s instance has no attribute %r" % (self.__class__, value)
+        )
 
 
 HSL = C_HSL()
@@ -266,6 +267,7 @@ HEX = C_HEX()
 ##
 # Conversion function
 ##
+
 
 def hsl2rgb(hsl):
     """Convert HSL representation towards RGB
@@ -430,10 +432,9 @@ def rgb2hsl(rgb):
     """
     r, g, b = [float(v) for v in rgb]
 
-    for name, v in {'Red': r, 'Green': g, 'Blue': b}.items():
+    for name, v in {"Red": r, "Green": g, "Blue": b}.items():
         if not (0 - FLOAT_ERROR <= v <= 1 + FLOAT_ERROR):
-            raise ValueError("%s must be between 0 and 1. You provided %r."
-                             % (name, v))
+            raise ValueError("%s must be between 0 and 1. You provided %r." % (name, v))
 
     vmin = min(r, g, b)  # Min. value of RGB
     vmax = max(r, g, b)  # Max. value of RGB
@@ -526,11 +527,10 @@ def rgb2hex(rgb, force_long=False):
 
     """
 
-    hx = ''.join(["%02x" % int(c * 255 + 0.5 - FLOAT_ERROR)
-                  for c in rgb])
+    hx = "".join(["%02x" % int(c * 255 + 0.5 - FLOAT_ERROR) for c in rgb])
 
     if not force_long and hx[0::2] == hx[1::2]:
-        hx = ''.join(hx[0::2])
+        hx = "".join(hx[0::2])
 
     return "#%s" % hx
 
@@ -569,8 +569,7 @@ def hex2rgb(str_rgb):
         else:
             raise ValueError()
     except BaseException:
-        raise ValueError("Invalid value %r provided for rgb color."
-                         % str_rgb)
+        raise ValueError("Invalid value %r provided for rgb color." % str_rgb)
 
     return tuple([float(int(v, 16)) / 255 for v in (r, g, b)])
 
@@ -607,15 +606,16 @@ def hex2web(hex):
         # take the first one
         color_name = RGB_TO_COLOR_NAMES[dec_rgb][0]
         # Enforce full lowercase for single worded color name.
-        return color_name if len(re.sub(r"[^A-Z]", "", color_name)) > 1 \
+        return (
+            color_name
+            if len(re.sub(r"[^A-Z]", "", color_name)) > 1
             else color_name.lower()
+        )
 
     # Hex format is verified by hex2rgb function. And should be 3 or 6 digit
     if len(hex) == 7:
-        if hex[1] == hex[2] and \
-           hex[3] == hex[4] and \
-           hex[5] == hex[6]:
-            return '#' + hex[1] + hex[3] + hex[5]
+        if hex[1] == hex[2] and hex[3] == hex[4] and hex[5] == hex[6]:
+            return "#" + hex[1] + hex[3] + hex[5]
     return hex
 
 
@@ -666,14 +666,12 @@ def web2hex(web, force_long=False):
     <Color red>
 
     """
-    if web.startswith('#'):
-        if (LONG_HEX_COLOR.match(web) or
-                (not force_long and SHORT_HEX_COLOR.match(web))):
+    if web.startswith("#"):
+        if LONG_HEX_COLOR.match(web) or (not force_long and SHORT_HEX_COLOR.match(web)):
             return web.lower()
         elif SHORT_HEX_COLOR.match(web) and force_long:
-            return '#' + ''.join([("%s" % (t, )) * 2 for t in web[1:]])
-        raise AttributeError(
-            "%r is not in web format. Need 3 or 6 hex digit." % web)
+            return "#" + "".join([("%s" % (t,)) * 2 for t in web[1:]])
+        raise AttributeError("%r is not in web format. Need 3 or 6 hex digit." % web)
 
     web = web.lower()
     if web not in COLOR_NAME_TO_RGB:
@@ -681,11 +679,11 @@ def web2hex(web, force_long=False):
 
     # convert dec to hex:
 
-    return rgb2hex([float(int(v)) / 255 for v in COLOR_NAME_TO_RGB[web]],
-                   force_long)
+    return rgb2hex([float(int(v)) / 255 for v in COLOR_NAME_TO_RGB[web]], force_long)
 
 
 # Missing functions conversion
+
 
 def hsl2hex(x):
     return rgb2hex(hsl2rgb(x))
@@ -736,11 +734,13 @@ def color_scale(begin_hsl, end_hsl, nb):
     """
 
     if nb < 0:
-        raise ValueError(
-            "Unsupported negative number of colors (nb=%r)." % nb)
+        raise ValueError("Unsupported negative number of colors (nb=%r)." % nb)
 
-    step = tuple([float(end_hsl[i] - begin_hsl[i]) / nb for i in range(0, 3)]) \
-        if nb > 0 else (0, 0, 0)
+    step = (
+        tuple([float(end_hsl[i] - begin_hsl[i]) / nb for i in range(0, 3)])
+        if nb > 0
+        else (0, 0, 0)
+    )
 
     def mul(step, value):
         return tuple([v * value for v in step])
@@ -754,6 +754,7 @@ def color_scale(begin_hsl, end_hsl, nb):
 ##
 # Color Pickers
 ##
+
 
 def RGB_color_picker(obj):
     """Build a color representation from the string representation of an object
@@ -784,12 +785,11 @@ def RGB_color_picker(obj):
     # Turn the input into a by 3-dividable string. SHA-384 is good because it
     # divides into 3 components of the same size, which will be used to
     # represent the RGB values of the color.
-    digest = hashlib.sha384(str(obj).encode('utf-8')).hexdigest()
+    digest = hashlib.sha384(str(obj).encode("utf-8")).hexdigest()
 
     # Split the digest into 3 sub-strings of equivalent size.
     subsize = int(len(digest) / 3)
-    splitted_digest = [digest[i * subsize: (i + 1) * subsize]
-                       for i in range(3)]
+    splitted_digest = [digest[i * subsize: (i + 1) * subsize] for i in range(3)]
 
     # Convert those hexadecimal sub-strings into integer and scale them down
     # to the 0..1 range.
@@ -797,7 +797,8 @@ def RGB_color_picker(obj):
     components = (
         int(d, 16)  # Make a number from a list with hex digits
         / max_value  # Scale it down to [0.0, 1.0]
-        for d in splitted_digest)
+        for d in splitted_digest
+    )
 
     return Color(rgb2hex(components))  # Profit!
 
@@ -815,189 +816,196 @@ def hash_or_str(obj):
 # All purpose object
 ##
 
+
 class Color(object):
     """Abstraction of a color object
 
-    Color object keeps information of a color. It can input/output to different
-    format (HSL, RGB, HEX, WEB) and their partial representation.
+        Color object keeps information of a color. It can input/output to different
+        format (HSL, RGB, HEX, WEB) and their partial representation.
 
-        >>> from colour import Color, HSL
+            >>> from colour import Color, HSL
 
-        >>> b = Color()
-        >>> b.hsl = HSL.BLUE
+            >>> b = Color()
+            >>> b.hsl = HSL.BLUE
 
-    Access values
-    -------------
+        Access values
+        -------------
 
-        >>> b.hue  # doctest: +ELLIPSIS
-        0.66...
-        >>> b.saturation
-        1.0
-        >>> b.luminance
-        0.5
+            >>> b.hue  # doctest: +ELLIPSIS
+            0.66...
+            >>> b.saturation
+            1.0
+            >>> b.luminance
+            0.5
 
-        >>> b.red
-        0.0
-        >>> b.blue
-        1.0
-        >>> b.green
-        0.0
+            >>> b.red
+            0.0
+            >>> b.blue
+            1.0
+            >>> b.green
+            0.0
 
-        >>> b.rgb
-        (0.0, 0.0, 1.0)
-        >>> b.hsl  # doctest: +ELLIPSIS
-        (0.66..., 1.0, 0.5)
-        >>> b.hex
-        '#00f'
+            >>> b.rgb
+            (0.0, 0.0, 1.0)
+            >>> b.hsl  # doctest: +ELLIPSIS
+            (0.66..., 1.0, 0.5)
+            >>> b.hex
+            '#00f'
 
-    Change values
-    -------------
+        Change values
+        -------------
 
-    Let's change Hue toward red tint:
+        Let's change Hue toward red tint:
 
-        >>> b.hue = 0.0
-        >>> b.hex
-        '#f00'
+            >>> b.hue = 0.0
+            >>> b.hex
+            '#f00'
 
-        >>> b.hue = 2.0/3
-        >>> b.hex
-        '#00f'
+            >>> b.hue = 2.0/3
+            >>> b.hex
+            '#00f'
 
-    In the other way round:
+        In the other way round:
 
-        >>> b.hex = '#f00'
-        >>> b.hsl
-        (0.0, 1.0, 0.5)
+            >>> b.hex = '#f00'
+            >>> b.hsl
+            (0.0, 1.0, 0.5)
 
-    Long hex can be accessed directly:
+        Long hex can be accessed directly:
 
-        >>> b.hex_l = '#123456'
-        >>> b.hex_l
-        '#123456'
-        >>> b.hex
-        '#123456'
+            >>> b.hex_l = '#123456'
+            >>> b.hex_l
+            '#123456'
+            >>> b.hex
+            '#123456'
 
-        >>> b.hex_l = '#ff0000'
-        >>> b.hex_l
-        '#ff0000'
-        >>> b.hex
-        '#f00'
+            >>> b.hex_l = '#ff0000'
+            >>> b.hex_l
+            '#ff0000'
+            >>> b.hex
+            '#f00'
 
-    Convenience
-    -----------
+        Convenience
+        -----------
 
-        >>> c = Color('blue')
-        >>> c
-        <Color blue>
-        >>> c.hue = 0
-        >>> c
-        <Color red>
+            >>> c = Color('blue')
+            >>> c
+            <Color blue>
+            >>> c.hue = 0
+            >>> c
+            <Color red>
 
-        >>> c.saturation = 0.0
-        >>> c.hsl  # doctest: +ELLIPSIS
-        (..., 0.0, 0.5)
-        >>> c.rgb
-        (0.5, 0.5, 0.5)
-        >>> c.hex
-        '#7f7f7f'
-        >>> c
-        <Color #7f7f7f>
+            >>> c.saturation = 0.0
+            >>> c.hsl  # doctest: +ELLIPSIS
+            (..., 0.0, 0.5)
+            >>> c.rgb
+            (0.5, 0.5, 0.5)
+            >>> c.hex
+            '#7f7f7f'
+            >>> c
+            <Color #7f7f7f>
 
-        >>> c.luminance = 0.0
-        >>> c
-        <Color black>
+            >>> c.luminance = 0.0
+            >>> c
+            <Color black>
 
-        >>> c.hex
-        '#000'
+            >>> c.hex
+            '#000'
 
-        >>> c.green = 1.0
-        >>> c.blue = 1.0
-        >>> c.hex
-        '#0ff'
-        >>> c
-        <Color cyan>
+            >>> c.green = 1.0
+            >>> c.blue = 1.0
+            >>> c.hex
+            '#0ff'
+            >>> c
+            <Color cyan>
 
-        >>> c = Color('blue', luminance=0.75)
-        >>> c
-        <Color #7f7fff>
+            >>> c = Color('blue', luminance=0.75)
+            >>> c
+            <Color #7f7fff>
 
-        >>> c = Color('red', red=0.5)
-        >>> c
-        <Color #7f0000>
+            >>> c = Color('red', red=0.5)
+            >>> c
+            <Color #7f0000>
 
-        >>> print(c)
-        #7f0000
+            >>> print(c)
+            #7f0000
 
-    You can try to query unexisting attributes:
+        You can try to query unexisting attributes:
 
-        >>> c.lightness  # doctest: +ELLIPSIS
-        Traceback (most recent call last):
-        ...
-        AttributeError: 'lightness' not found
+            >>> c.lightness  # doctest: +ELLIPSIS
+            Traceback (most recent call last):
+            ...
+            AttributeError: 'lightness' not found
 
-    TODO: could add HSV, CMYK, YUV conversion.
+        TODO: could add HSV, CMYK, YUV conversion.
 
-#     >>> b.hsv
-#     >>> b.value
-#     >>> b.cyan
-#     >>> b.magenta
-#     >>> b.yellow
-#     >>> b.key
-#     >>> b.cmyk
-
-
-    Recursive init
-    --------------
-
-    To support blind conversion of web strings (or already converted object),
-    the Color object supports instantiation with another Color object.
-
-        >>> Color(Color(Color('red')))
-        <Color red>
-
-    Equality support
-    ----------------
-
-    Default equality is RGB hex comparison:
-
-        >>> Color('red') == Color('blue')
-        False
-        >>> Color('red') == Color('red')
-        True
-        >>> Color('red') != Color('blue')
-        True
-        >>> Color('red') != Color('red')
-        False
-
-    But this can be changed:
-
-        >>> saturation_equality = lambda c1, c2: c1.luminance == c2.luminance
-        >>> Color('red', equality=saturation_equality) == Color('blue')
-        True
+    #     >>> b.hsv
+    #     >>> b.value
+    #     >>> b.cyan
+    #     >>> b.magenta
+    #     >>> b.yellow
+    #     >>> b.key
+    #     >>> b.cmyk
 
 
-    Subclassing support
-    -------------------
+        Recursive init
+        --------------
 
-    You should be able to subclass ``Color`` object without any issues::
+        To support blind conversion of web strings (or already converted object),
+        the Color object supports instantiation with another Color object.
 
-        >>> class Tint(Color):
-        ...     pass
+            >>> Color(Color(Color('red')))
+            <Color red>
 
-    And keep the internal API working::
+        Equality support
+        ----------------
 
-        >>> Tint("red").hsl
-        (0.0, 1.0, 0.5)
+        Default equality is RGB hex comparison:
+
+            >>> Color('red') == Color('blue')
+            False
+            >>> Color('red') == Color('red')
+            True
+            >>> Color('red') != Color('blue')
+            True
+            >>> Color('red') != Color('red')
+            False
+
+        But this can be changed:
+
+            >>> saturation_equality = lambda c1, c2: c1.luminance == c2.luminance
+            >>> Color('red', equality=saturation_equality) == Color('blue')
+            True
+
+
+        Subclassing support
+        -------------------
+
+        You should be able to subclass ``Color`` object without any issues::
+
+            >>> class Tint(Color):
+            ...     pass
+
+        And keep the internal API working::
+
+            >>> Tint("red").hsl
+            (0.0, 1.0, 0.5)
 
     """
 
     _hsl = None  # internal representation
 
-    def __init__(self, color=None,
-                 pick_for=None, picker=RGB_color_picker, pick_key=hash_or_str,
-                 **kwargs):
+    def __init__(
+        self,
+        color=None,
+        pick_for=None,
+        picker=RGB_color_picker,
+        pick_key=hash_or_str,
+        **kwargs,
+    ):
 
         if pick_key is None:
+
             def pick_key(x):
                 return x
 
@@ -1007,7 +1015,7 @@ class Color(object):
         if isinstance(color, Color):
             self.web = color.web
         else:
-            self.web = color if color else 'black'
+            self.web = color if color else "black"
 
         self.equality = RGB_equivalence
 
@@ -1018,13 +1026,13 @@ class Color(object):
         if label.startswith("get_"):
             raise AttributeError("'%s' not found" % label)
         try:
-            return getattr(self, 'get_' + label)()
+            return getattr(self, "get_" + label)()
         except AttributeError:
             raise AttributeError("'%s' not found" % label)
 
     def __setattr__(self, label, value):
         if label not in ["_hsl", "equality"]:
-            fc = getattr(self, 'set_' + label)
+            fc = getattr(self, "set_" + label)
             fc(value)
         else:
             self.__dict__[label] = value
@@ -1126,11 +1134,8 @@ class Color(object):
             return self.equality(self, other)
         return NotImplemented
 
-    if sys.version_info[0] == 2:
-        # Note: intended to be a backport of python 3 behavior
-        def __ne__(self, other):
-            equal = self.__eq__(other)
-            return equal if equal is NotImplemented else not equal
+
+Colour = Color
 
 
 def RGB_equivalence(c1, c2):
@@ -1142,11 +1147,11 @@ def HSL_equivalence(c1, c2):
 
 
 def make_color_factory(**kwargs_defaults):
-
     def ColorFactory(*args, **kwargs):
         new_kwargs = kwargs_defaults.copy()
         new_kwargs.update(kwargs)
         return Color(*args, **new_kwargs)
+
     return ColorFactory
 
 
