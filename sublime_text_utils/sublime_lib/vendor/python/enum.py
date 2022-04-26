@@ -414,7 +414,7 @@ class EnumMeta(type):
         if module is None:
             try:
                 module = sys._getframe(2).f_globals['__name__']
-            except (AttributeError, ValueError) as exc: # noqa
+            except (AttributeError, ValueError) as exc:
                 pass
         if module is None:
             _make_class_unpicklable(enum_class)
@@ -787,7 +787,8 @@ class IntFlag(int, Flag):
                 bit = _high_bit(extra_flags)
                 flag_value = 2 ** bit
                 if (flag_value not in cls._value2member_map_ and
-                        flag_value not in need_to_create):
+                    flag_value not in need_to_create
+                    ):
                     need_to_create.append(flag_value)
                 if extra_flags == -flag_value:
                     extra_flags = 0

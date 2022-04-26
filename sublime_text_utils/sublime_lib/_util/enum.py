@@ -1,8 +1,8 @@
-from ..vendor.python.enum import Enum
-from ..vendor.python.enum import EnumMeta
-from ..vendor.python.enum import Flag
 from functools import partial
 
+from .._compat.enum import Enum
+from .._compat.enum import EnumMeta
+from .._compat.enum import Flag
 from .._compat.typing import Any
 from .._compat.typing import Callable
 from .._compat.typing import Optional
@@ -13,7 +13,7 @@ __all__ = ['ExtensibleConstructorMeta', 'construct_with_alternatives', 'construc
 
 class ExtensibleConstructorMeta(EnumMeta):
     def __call__(cls, *args: Any, **kwargs: Any) -> Any:
-        return cls.__new__(cls, *args, **kwargs)
+        return cls.__new__(cls, *args, **kwargs)  # type: ignore
 
 
 def extend_constructor(

@@ -8,10 +8,7 @@ import sys
 
 from glob import glob
 
-try:
-    import sublime
-except Exception:
-    pass
+import sublime
 
 _valid_logging_levels = [
     "ERROR",
@@ -109,7 +106,7 @@ class SublimeLogger():
         Parameters
         ----------
         logging_level : str, optional
-            One of the logging leves defined in ``_valid_logging_levels``.
+            One of the logging levels defined in ``_valid_logging_levels``.
         """
         if logging_level.upper() in _valid_logging_levels:
             level = getattr(logging, logging_level.upper())
@@ -198,7 +195,7 @@ class SublimeLogger():
         """
         sublime.set_timeout(functools.partial(
             self._logger.log, level, msg, **kwargs
-        ), 0)
+        ), 10)
 
     def _obfuscate_user_home(self, msg):
         """Obfuscate User's home path.

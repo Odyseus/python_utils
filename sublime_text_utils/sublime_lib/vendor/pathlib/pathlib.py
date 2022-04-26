@@ -23,7 +23,7 @@ from stat import S_ISSOCK
 try:
     from urllib import quote as urlquote, quote as urlquote_from_bytes
 except ImportError:
-    from urllib.parse import quote as urlquote, quote_from_bytes as urlquote_from_bytes  # noqa
+    from urllib.parse import quote as urlquote, quote_from_bytes as urlquote_from_bytes
 
 
 try:

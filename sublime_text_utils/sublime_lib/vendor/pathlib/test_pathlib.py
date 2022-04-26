@@ -26,7 +26,8 @@ except ImportError:
 TESTFN = support.TESTFN
 
 try:
-    import grp, pwd
+    import grp
+    import pwd
 except ImportError:
     grp = pwd = None
 
@@ -46,6 +47,7 @@ def fs_is_case_insensitive(directory):
         return False
     finally:
         os.unlink(base_path)
+
 
 support.fs_is_case_insensitive = fs_is_case_insensitive
 
@@ -72,29 +74,29 @@ class _BaseFlavourTest(object):
         check = self._check_parse_parts
         sep = self.flavour.sep
         # Unanchored parts
-        check([],                   ('', '', []))
-        check(['a'],                ('', '', ['a']))
-        check(['a/'],               ('', '', ['a']))
-        check(['a', 'b'],           ('', '', ['a', 'b']))
+        check([], ('', '', []))
+        check(['a'], ('', '', ['a']))
+        check(['a/'], ('', '', ['a']))
+        check(['a', 'b'], ('', '', ['a', 'b']))
         # Expansion
-        check(['a/b'],              ('', '', ['a', 'b']))
-        check(['a/b/'],             ('', '', ['a', 'b']))
-        check(['a', 'b/c', 'd'],    ('', '', ['a', 'b', 'c', 'd']))
+        check(['a/b'], ('', '', ['a', 'b']))
+        check(['a/b/'], ('', '', ['a', 'b']))
+        check(['a', 'b/c', 'd'], ('', '', ['a', 'b', 'c', 'd']))
         # Collapsing and stripping excess slashes
-        check(['a', 'b//c', 'd'],   ('', '', ['a', 'b', 'c', 'd']))
-        check(['a', 'b/c/', 'd'],   ('', '', ['a', 'b', 'c', 'd']))
+        check(['a', 'b//c', 'd'], ('', '', ['a', 'b', 'c', 'd']))
+        check(['a', 'b/c/', 'd'], ('', '', ['a', 'b', 'c', 'd']))
         # Eliminating standalone dots
-        check(['.'],                ('', '', []))
-        check(['.', '.', 'b'],      ('', '', ['b']))
-        check(['a', '.', 'b'],      ('', '', ['a', 'b']))
-        check(['a', '.', '.'],      ('', '', ['a']))
+        check(['.'], ('', '', []))
+        check(['.', '.', 'b'], ('', '', ['b']))
+        check(['a', '.', 'b'], ('', '', ['a', 'b']))
+        check(['a', '.', '.'], ('', '', ['a']))
         # The first part is anchored
-        check(['/a/b'],             ('', sep, [sep, 'a', 'b']))
-        check(['/a', 'b'],          ('', sep, [sep, 'a', 'b']))
-        check(['/a/', 'b'],         ('', sep, [sep, 'a', 'b']))
+        check(['/a/b'], ('', sep, [sep, 'a', 'b']))
+        check(['/a', 'b'], ('', sep, [sep, 'a', 'b']))
+        check(['/a/', 'b'], ('', sep, [sep, 'a', 'b']))
         # Ignoring parts before an anchored part
-        check(['a', '/b', 'c'],     ('', sep, [sep, 'b', 'c']))
-        check(['a', '/b', '/c'],    ('', sep, [sep, 'c']))
+        check(['a', '/b', 'c'], ('', sep, [sep, 'b', 'c']))
+        check(['a', '/b', '/c'], ('', sep, [sep, 'c']))
 
 
 class PosixFlavourTest(_BaseFlavourTest, unittest.TestCase):
@@ -104,13 +106,13 @@ class PosixFlavourTest(_BaseFlavourTest, unittest.TestCase):
         check = self._check_parse_parts
         # Collapsing of excess leading slashes, except for the double-slash
         # special case.
-        check(['//a', 'b'],             ('', '//', ['//', 'a', 'b']))
-        check(['///a', 'b'],            ('', '/', ['/', 'a', 'b']))
-        check(['////a', 'b'],           ('', '/', ['/', 'a', 'b']))
+        check(['//a', 'b'], ('', '//', ['//', 'a', 'b']))
+        check(['///a', 'b'], ('', '/', ['/', 'a', 'b']))
+        check(['////a', 'b'], ('', '/', ['/', 'a', 'b']))
         # Paths which look like NT paths aren't treated specially
-        check(['c:a'],                  ('', '', ['c:a']))
-        check(['c:\\a'],                ('', '', ['c:\\a']))
-        check(['\\a'],                  ('', '', ['\\a']))
+        check(['c:a'], ('', '', ['c:a']))
+        check(['c:\\a'], ('', '', ['c:\\a']))
+        check(['\\a'], ('', '', ['\\a']))
 
     def test_splitroot(self):
         f = self.flavour.splitroot
@@ -139,32 +141,32 @@ class NTFlavourTest(_BaseFlavourTest, unittest.TestCase):
     def test_parse_parts(self):
         check = self._check_parse_parts
         # First part is anchored
-        check(['c:'],                   ('c:', '', ['c:']))
-        check(['c:\\'],                 ('c:', '\\', ['c:\\']))
-        check(['\\'],                   ('', '\\', ['\\']))
-        check(['c:a'],                  ('c:', '', ['c:', 'a']))
-        check(['c:\\a'],                ('c:', '\\', ['c:\\', 'a']))
-        check(['\\a'],                  ('', '\\', ['\\', 'a']))
+        check(['c:'], ('c:', '', ['c:']))
+        check(['c:\\'], ('c:', '\\', ['c:\\']))
+        check(['\\'], ('', '\\', ['\\']))
+        check(['c:a'], ('c:', '', ['c:', 'a']))
+        check(['c:\\a'], ('c:', '\\', ['c:\\', 'a']))
+        check(['\\a'], ('', '\\', ['\\', 'a']))
         # UNC paths
-        check(['\\\\a\\b'],             ('\\\\a\\b', '\\', ['\\\\a\\b\\']))
-        check(['\\\\a\\b\\'],           ('\\\\a\\b', '\\', ['\\\\a\\b\\']))
-        check(['\\\\a\\b\\c'],          ('\\\\a\\b', '\\', ['\\\\a\\b\\', 'c']))
+        check(['\\\\a\\b'], ('\\\\a\\b', '\\', ['\\\\a\\b\\']))
+        check(['\\\\a\\b\\'], ('\\\\a\\b', '\\', ['\\\\a\\b\\']))
+        check(['\\\\a\\b\\c'], ('\\\\a\\b', '\\', ['\\\\a\\b\\', 'c']))
         # Second part is anchored, so that the first part is ignored
-        check(['a', 'Z:b', 'c'],        ('Z:', '', ['Z:', 'b', 'c']))
-        check(['a', 'Z:\\b', 'c'],      ('Z:', '\\', ['Z:\\', 'b', 'c']))
-        check(['a', '\\b', 'c'],        ('', '\\', ['\\', 'b', 'c']))
+        check(['a', 'Z:b', 'c'], ('Z:', '', ['Z:', 'b', 'c']))
+        check(['a', 'Z:\\b', 'c'], ('Z:', '\\', ['Z:\\', 'b', 'c']))
+        check(['a', '\\b', 'c'], ('', '\\', ['\\', 'b', 'c']))
         # UNC paths
-        check(['a', '\\\\b\\c', 'd'],   ('\\\\b\\c', '\\', ['\\\\b\\c\\', 'd']))
+        check(['a', '\\\\b\\c', 'd'], ('\\\\b\\c', '\\', ['\\\\b\\c\\', 'd']))
         # Collapsing and stripping excess slashes
         check(['a', 'Z:\\\\b\\\\c\\', 'd\\'], ('Z:', '\\', ['Z:\\', 'b', 'c', 'd']))
         # UNC paths
         check(['a', '\\\\b\\c\\\\', 'd'], ('\\\\b\\c', '\\', ['\\\\b\\c\\', 'd']))
         # Extended paths
-        check(['\\\\?\\c:\\'],          ('\\\\?\\c:', '\\', ['\\\\?\\c:\\']))
-        check(['\\\\?\\c:\\a'],         ('\\\\?\\c:', '\\', ['\\\\?\\c:\\', 'a']))
+        check(['\\\\?\\c:\\'], ('\\\\?\\c:', '\\', ['\\\\?\\c:\\']))
+        check(['\\\\?\\c:\\a'], ('\\\\?\\c:', '\\', ['\\\\?\\c:\\', 'a']))
         # Extended UNC paths (format is "\\?\UNC\server\share")
-        check(['\\\\?\\UNC\\b\\c'],     ('\\\\?\\UNC\\b\\c', '\\', ['\\\\?\\UNC\\b\\c\\']))
-        check(['\\\\?\\UNC\\b\\c\\d'],  ('\\\\?\\UNC\\b\\c', '\\', ['\\\\?\\UNC\\b\\c\\', 'd']))
+        check(['\\\\?\\UNC\\b\\c'], ('\\\\?\\UNC\\b\\c', '\\', ['\\\\?\\UNC\\b\\c\\']))
+        check(['\\\\?\\UNC\\b\\c\\d'], ('\\\\?\\UNC\\b\\c', '\\', ['\\\\?\\UNC\\b\\c\\', 'd']))
 
     def test_splitroot(self):
         f = self.flavour.splitroot
@@ -196,7 +198,8 @@ class NTFlavourTest(_BaseFlavourTest, unittest.TestCase):
 #
 
 with_fsencode = unittest.skipIf(sys.version_info < (3, 2),
-    'os.fsencode has been introduced in version 3.2')
+                                'os.fsencode has been introduced in version 3.2')
+
 
 class _BasePurePathTest(object):
 
@@ -208,13 +211,13 @@ class _BasePurePathTest(object):
             ('a/b/',), ('a//b',), ('a//b//',),
             # empty components get removed
             ('', 'a', 'b'), ('a', '', 'b'), ('a', 'b', ''),
-            ],
+        ],
         '/b/c/d': [
             ('a', '/b/c', 'd'), ('a', '///b//c', 'd/'),
             ('/a', '/b/c', 'd'),
             # empty components get removed
             ('/', 'b', '', 'c/d'), ('/', '', 'b/c/d'), ('', '/b/c/d'),
-            ],
+        ],
     }
 
     def setUp(self):
@@ -263,7 +266,7 @@ class _BasePurePathTest(object):
         self.assertEqual(pp, P('c/a/b/d'))
         pp = p / P('c')
         self.assertEqual(pp, P('a/b/c'))
-        pp = p/ '/c'
+        pp = p / '/c'
         self.assertEqual(pp, P('/c'))
 
     def _check_str(self, expected, args):
@@ -308,7 +311,7 @@ class _BasePurePathTest(object):
             # The repr() is in the form ClassName("forward-slashes path")
             self.assertTrue(r.startswith(clsname + '('), r)
             self.assertTrue(r.endswith(')'), r)
-            inner = r[len(clsname) + 1 : -1]
+            inner = r[len(clsname) + 1: -1]
             self.assertEqual(eval(inner), p.as_posix())
             # The repr() roundtrips
             q = eval(r, pathlib.__dict__)
@@ -419,7 +422,7 @@ class _BasePurePathTest(object):
                 tuples = tuples + [
                     tuple(part.replace('/', self.sep) for part in t)
                     for t in tuples
-                    ]
+                ]
                 tuples.append((posix, ))
             pcanon = self.cls(canon)
             for t in tuples:
@@ -716,15 +719,15 @@ class PureWindowsPathTest(_BasePurePathTest, unittest.TestCase):
 
     equivalences = _BasePurePathTest.equivalences.copy()
     equivalences.update({
-        'c:a': [ ('c:', 'a'), ('c:', 'a/'), ('/', 'c:', 'a') ],
+        'c:a': [('c:', 'a'), ('c:', 'a/'), ('/', 'c:', 'a')],
         'c:/a': [
             ('c:/', 'a'), ('c:', '/', 'a'), ('c:', '/a'),
             ('/z', 'c:/', 'a'), ('//x/y', 'c:/', 'a'),
-            ],
-        '//a/b/': [ ('//a/b',) ],
+        ],
+        '//a/b/': [('//a/b',)],
         '//a/b/c': [
             ('//a/b', 'c'), ('//a/b/', 'c'),
-            ],
+        ],
     })
 
     def test_str(self):
@@ -1141,7 +1144,7 @@ class PurePathTest(_BasePurePathTest, unittest.TestCase):
     def test_concrete_class(self):
         p = self.cls('a')
         self.assertIs(type(p),
-            pathlib.PureWindowsPath if os.name == 'nt' else pathlib.PurePosixPath)
+                      pathlib.PureWindowsPath if os.name == 'nt' else pathlib.PurePosixPath)
 
     def test_different_flavours_unequal(self):
         p = pathlib.PurePosixPath('a')
@@ -1172,6 +1175,7 @@ BASE = os.path.realpath(TESTFN)
 join = lambda *x: os.path.join(BASE, *x)
 rel_join = lambda *x: os.path.join(TESTFN, *x)
 
+
 def symlink_skip_reason():
     if not pathlib.supports_symlinks:
         return "no system support for symlinks"
@@ -1182,6 +1186,7 @@ def symlink_skip_reason():
     else:
         support.unlink(BASE)
     return None
+
 
 symlink_skip_reason = symlink_skip_reason()
 
@@ -1195,6 +1200,7 @@ with_symlinks = unittest.skipIf(symlink_skip_reason, symlink_skip_reason)
 @only_posix
 class PosixPathAsPureTest(PurePosixPathTest):
     cls = pathlib.PosixPath
+
 
 @only_nt
 class WindowsPathAsPureTest(PureWindowsPathTest):
@@ -1262,7 +1268,7 @@ class _BasePathTest(object):
             # Python 2.6 kludge for http://bugs.python.org/issue7853
             try:
                 func(*args, **kwargs)
-            except:
+            except BaseException:
                 raise
         self.assertEqual(cm.exception.errno, errno.ENOENT)
 
@@ -1314,7 +1320,7 @@ class _BasePathTest(object):
         expected = ['dirA', 'dirB', 'dirC', 'fileA']
         if not symlink_skip_reason:
             expected += ['linkA', 'linkB', 'brokenLink']
-        self.assertEqual(paths, set( P(BASE, q) for q in expected ))
+        self.assertEqual(paths, set(P(BASE, q) for q in expected))
 
     @with_symlinks
     def test_iterdir_symlink(self):
@@ -1322,7 +1328,7 @@ class _BasePathTest(object):
         P = self.cls
         p = P(BASE, 'linkB')
         paths = set(p.iterdir())
-        expected = set( P(BASE, 'linkB', q) for q in ['fileB', 'linkD'] )
+        expected = set(P(BASE, 'linkB', q) for q in ['fileB', 'linkD'])
         self.assertEqual(paths, expected)
 
     def test_iterdir_nodir(self):
@@ -1332,7 +1338,7 @@ class _BasePathTest(object):
             # Python 2.6 kludge for http://bugs.python.org/issue7853
             try:
                 next(p.iterdir())
-            except:
+            except BaseException:
                 raise
         # ENOENT or EINVAL under Windows, ENOTDIR otherwise
         # (see issue #12802)
@@ -1341,7 +1347,7 @@ class _BasePathTest(object):
 
     def test_glob_common(self):
         def _check(glob, expected):
-            self.assertEqual(set(glob), set( P(BASE, q) for q in expected ))
+            self.assertEqual(set(glob), set(P(BASE, q) for q in expected))
         P = self.cls
         p = P(BASE)
         it = p.glob("fileA")
@@ -1365,7 +1371,7 @@ class _BasePathTest(object):
 
     def test_rglob_common(self):
         def _check(glob, expected):
-            self.assertEqual(set(glob), set( P(BASE, q) for q in expected ))
+            self.assertEqual(set(glob), set(P(BASE, q) for q in expected))
         P = self.cls
         p = P(BASE)
         it = p.rglob("fileA")
@@ -1385,8 +1391,8 @@ class _BasePathTest(object):
         # ".." is not special in globs
         P = self.cls
         p = P(BASE)
-        self.assertEqual(set(p.glob("..")), set([ P(BASE, "..") ]))
-        self.assertEqual(set(p.glob("dirA/../file*")), set([ P(BASE, "dirA/../fileA") ]))
+        self.assertEqual(set(p.glob("..")), set([P(BASE, "..")]))
+        self.assertEqual(set(p.glob("dirA/../file*")), set([P(BASE, "dirA/../fileA")]))
         self.assertEqual(set(p.glob("../xyzzy")), set())
 
     def _check_resolve_relative(self, p, expected):
@@ -1456,7 +1462,7 @@ class _BasePathTest(object):
 
     @with_symlinks
     def test_lstat(self):
-        p = self.cls(BASE)/ 'linkA'
+        p = self.cls(BASE) / 'linkA'
         st = p.stat()
         self.assertNotEqual(st, p.lstat())
 
@@ -1571,7 +1577,7 @@ class _BasePathTest(object):
             # Python 2.6 kludge for http://bugs.python.org/issue7853
             try:
                 p.mkdir()
-            except:
+            except BaseException:
                 raise
         self.assertEqual(cm.exception.errno, errno.EEXIST)
 
@@ -1583,7 +1589,7 @@ class _BasePathTest(object):
             # Python 2.6 kludge for http://bugs.python.org/issue7853
             try:
                 p.mkdir()
-            except:
+            except BaseException:
                 raise
         self.assertEqual(cm.exception.errno, errno.ENOENT)
         p.mkdir(parents=True)
@@ -1592,11 +1598,11 @@ class _BasePathTest(object):
         with self.assertRaises(OSError) as cm:
             try:
                 p.mkdir(parents=True)
-            except:
+            except BaseException:
                 raise
         self.assertEqual(cm.exception.errno, errno.EEXIST)
         # test `mode` arg
-        mode = stat.S_IMODE(p.stat().st_mode) # default mode
+        mode = stat.S_IMODE(p.stat().st_mode)  # default mode
         p = self.cls(BASE, 'newdirD', 'newdirE')
         p.mkdir(0o555, parents=True)
         self.assertTrue(p.exists())
@@ -1639,7 +1645,7 @@ class _BasePathTest(object):
         if not symlink_skip_reason:
             self.assertFalse((P / 'linkA').is_dir())
             self.assertTrue((P / 'linkB').is_dir())
-            self.assertFalse((P/ 'brokenLink').is_dir())
+            self.assertFalse((P / 'brokenLink').is_dir())
 
     def test_is_file(self):
         P = self.cls(BASE)
@@ -1649,7 +1655,7 @@ class _BasePathTest(object):
         if not symlink_skip_reason:
             self.assertTrue((P / 'linkA').is_file())
             self.assertFalse((P / 'linkB').is_file())
-            self.assertFalse((P/ 'brokenLink').is_file())
+            self.assertFalse((P / 'brokenLink').is_file())
 
     def test_is_symlink(self):
         P = self.cls(BASE)
@@ -1659,7 +1665,7 @@ class _BasePathTest(object):
         if not symlink_skip_reason:
             self.assertTrue((P / 'linkA').is_symlink())
             self.assertTrue((P / 'linkB').is_symlink())
-            self.assertTrue((P/ 'brokenLink').is_symlink())
+            self.assertTrue((P / 'brokenLink').is_symlink())
 
     def test_is_fifo_false(self):
         P = self.cls(BASE)
@@ -1792,7 +1798,7 @@ class PathTest(_BasePathTest, unittest.TestCase):
     def test_concrete_class(self):
         p = self.cls('a')
         self.assertIs(type(p),
-            pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath)
+                      pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath)
 
     def test_unsupported_flavour(self):
         if os.name == 'nt':
@@ -1882,12 +1888,12 @@ class WindowsPathTest(_BasePathTest, unittest.TestCase):
     def test_glob(self):
         P = self.cls
         p = P(BASE)
-        self.assertEqual(set(p.glob("FILEa")), set( P(BASE, "fileA") ))
+        self.assertEqual(set(p.glob("FILEa")), set(P(BASE, "fileA")))
 
     def test_rglob(self):
         P = self.cls
         p = P(BASE, "dirC")
-        self.assertEqual(set(p.rglob("FILEd")), set( P(BASE, "dirC/dirD/fileD") ))
+        self.assertEqual(set(p.rglob("FILEd")), set(P(BASE, "dirC/dirD/fileD")))
 
 
 def main():

@@ -2,8 +2,6 @@ import plistlib
 
 from collections import namedtuple
 
-from xml.parsers.expat import ExpatError
-
 from ._util.simple_yaml import parse_simple_top_level_keys
 from .resource_path import ResourcePath
 
@@ -26,13 +24,7 @@ def get_sublime_syntax_metadata(path: ResourcePath) -> dict:
 
 
 def get_tmlanguage_metadata(path: ResourcePath) -> dict:
-    # tree = plistlib.readPlistFromBytes(path.read_bytes())
-    try:
-        tree = plistlib.readPlistFromBytes(path.read_bytes())
-    except ExpatError as err:
-        tree = {"scopeName": "FUCKED UP!!!"}
-        print(path.stem)
-        print(err)
+    tree = plistlib.readPlistFromBytes(path.read_bytes())
 
     return {
         'name': tree.get('name') or path.stem,
@@ -42,13 +34,7 @@ def get_tmlanguage_metadata(path: ResourcePath) -> dict:
 
 
 def get_hidden_tmlanguage_metadata(path: ResourcePath) -> dict:
-    # tree = plistlib.readPlistFromBytes(path.read_bytes())
-    try:
-        tree = plistlib.readPlistFromBytes(path.read_bytes())
-    except ExpatError as err:
-        tree = {"scopeName": "FUCKED UP!!!"}
-        print(path.stem)
-        print(err)
+    tree = plistlib.readPlistFromBytes(path.read_bytes())
 
     return {
         'name': path.stem,  # `name` key is ignored

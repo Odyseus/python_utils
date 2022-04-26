@@ -22,11 +22,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-# NOTE: try/except block needed for Sphinx.
-try:
-    import sublime
-except Exception:
-    pass
+import sublime
 
 from ..diff_match_patch import diff_match_patch
 
@@ -42,10 +38,10 @@ def _merge_code(view, edit, original, modified):
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view object.
-    edit : object
-        A Sublime Text edit object.
+    view : sublime.View
+        A Sublime Text ``View`` object.
+    edit : sublime.Edit
+        A Sublime Text ``Edit`` object.
     original : str
         Original string.
     modified : str
@@ -100,10 +96,10 @@ def merge_code(view, edit, original, modified):
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view object.
-    edit : object
-        A Sublime Text edit object.
+    view : sublime.View
+        A Sublime Text ``View`` object.
+    edit : sublime.Edit
+        A Sublime Text ``Edit`` object.
     original : str
         Original string.
     modified : str

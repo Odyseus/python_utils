@@ -1,6 +1,5 @@
 # Copyright © 2001-2018 Python Software Foundation; All Rights Reserved
 
-
 class DynamicClassAttribute:
     """Route attribute access on a class to __getattr__.
 

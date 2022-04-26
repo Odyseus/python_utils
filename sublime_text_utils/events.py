@@ -1,114 +1,123 @@
 # -*- coding: utf-8 -*-
-"""Events.
-
-Attributes
-----------
-listeners : collections.defaultdict
-    Registered listeners storage.
-map_fn_to_topic : dict
-    Registered functions storage.
+"""Events manager.
 """
 import traceback
 
 from collections import defaultdict
 
 
-listeners = defaultdict(set)
+class Events:
+    """docstring for Events
 
-
-def subscribe(topic, fn):
-    """Register event.
-
-    Parameters
+    Attributes
     ----------
-    topic : str
-        Event name.
-    fn : method
-        Method to register.
+    listeners : collections.defaultdict
+        Functions storage.
+    map_fn_to_topic : dict
+        Functions to topics map.
     """
-    listeners[topic].add(fn)
 
+    def __init__(self):
+        """Initialization.
+        """
+        self.listeners = defaultdict(set)
+        self.map_fn_to_topic = {}
 
-def unsubscribe(topic, fn):
-    """Unregister event.
+    def destroy(self):
+        """Perform cleanup of all stored events.
+        """
+        self.listeners.clear()
+        self.map_fn_to_topic.clear()
+        self.listeners = defaultdict(set)
+        self.map_fn_to_topic = {}
 
-    Parameters
-    ----------
-    topic : str
-        Event name.
-    fn : method
-        Method to unregister.
-    """
-    try:
-        listeners[topic].remove(fn)
-    except KeyError:
-        pass
-
-
-def broadcast(topic, payload={}):
-    """Emit event.
-
-    Parameters
-    ----------
-    topic : srt
-        Event name.
-    payload : dict, optional
-        Parameters passed to executed method.
-    """
-    for fn in listeners.get(topic, []):
-        try:
-            fn(**payload)
-        except Exception:
-            traceback.print_exc()
-
-
-map_fn_to_topic = {}
-
-
-def on(topic):
-    """Event registration decorator.
-
-    Parameters
-    ----------
-    topic : str
-        Event name.
-
-    Returns
-    -------
-    method
-        Decorator function.
-    """
-    def inner(fn):
-        """Decorator.
+    def subscribe(self, topic, fn):
+        """Register event.
 
         Parameters
         ----------
+        topic : str
+            Event name.
         fn : method
-            Method to execute.
+            Method to register.
+        """
+        self.listeners[topic].add(fn)
+
+    def unsubscribe(self, topic, fn):
+        """Unregister event.
+
+        Parameters
+        ----------
+        topic : str
+            Event name.
+        fn : method
+            Method to unregister.
+        """
+        try:
+            self.listeners[topic].remove(fn)
+        except KeyError:
+            pass
+
+    def broadcast(self, topic, payload={}):
+        """Emit event.
+
+        Parameters
+        ----------
+        topic : srt
+            Event name.
+        payload : dict, optional
+            Parameters passed to executed method.
+        """
+        for fn in self.listeners.get(topic, []):
+            try:
+                fn(**payload)
+            except Exception:
+                traceback.print_exc()
+
+    def on(self, topic):
+        """Event registration decorator.
+
+        Parameters
+        ----------
+        topic : str
+            Event name.
 
         Returns
         -------
         method
-            Method to execute.
+            Decorator function.
         """
-        subscribe(topic, fn)
-        map_fn_to_topic[fn] = topic
-        return fn
 
-    return inner
+        def inner(fn):
+            """Decorator.
 
+            Parameters
+            ----------
+            fn : method
+                Method to execute.
 
-def off(fn):
-    """Remove event.
+            Returns
+            -------
+            method
+                Method to execute.
+            """
+            self.subscribe(topic, fn)
+            self.map_fn_to_topic[fn] = topic
+            return fn
 
-    Parameters
-    ----------
-    fn : method
-        Method to unregister.
-    """
-    topic = map_fn_to_topic.get(fn, None)
-    if topic:
-        unsubscribe(topic, fn)
+        return inner
+
+    def off(self, fn):
+        """Remove event.
+
+        Parameters
+        ----------
+        fn : method
+            Method to unregister.
+        """
+        topic = self.map_fn_to_topic.get(fn, None)
+        if topic:
+            self.unsubscribe(topic, fn)
 
 
 if __name__ == "__main__":

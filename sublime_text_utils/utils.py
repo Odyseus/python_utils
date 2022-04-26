@@ -5,16 +5,11 @@ import os
 import sys
 
 from collections import ChainMap
-from collections import Mapping
-from collections import Sequence
-from functools import wraps
+from collections.abc import Mapping
+from collections.abc import Sequence
 
-# NOTE: try/except block needed for Sphinx.
-try:
-    import sublime
-    import sublime_plugin
-except Exception:
-    pass
+import sublime
+import sublime_plugin
 
 from .. import cmd_utils
 
@@ -26,8 +21,8 @@ def has_right_syntax(view, view_syntaxes=[], strict=False):
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view.
+    view : sublime.View
+        A Sublime Text ``View`` object.
     view_syntaxes : list, string, optional
         List of syntaxes to check against.
     strict : bool, optional
@@ -41,10 +36,18 @@ def has_right_syntax(view, view_syntaxes=[], strict=False):
     syntax = view.settings().get("syntax").split("/")[-1].lower()
 
     if isinstance(view_syntaxes, list):
-        return any([(s.lower() == syntax if strict else s.lower() in syntax)
-                    for s in view_syntaxes])
+        return any(
+            [
+                (s.lower() == syntax if strict else s.lower() in syntax)
+                for s in view_syntaxes
+            ]
+        )
     elif isinstance(view_syntaxes, str):
-        return view_syntaxes.lower() == syntax if strict else view_syntaxes.lower() in syntax
+        return (
+            view_syntaxes.lower() == syntax
+            if strict
+            else view_syntaxes.lower() in syntax
+        )
 
     return False
 
@@ -54,8 +57,8 @@ def has_right_extension(view, file_extensions=[]):
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view.
+    view : sublime.View
+        A Sublime Text ``View`` object.
     file_extensions : list, optional
         The list of file extensions to check against.
 
@@ -80,66 +83,79 @@ def has_right_extension(view, file_extensions=[]):
     return False
 
 
-def remove_bad_chars(text, bad_chars=[]):
-    """Remove *bad characters* from selection.
-
-    Parameters
-    ----------
-    text : str
-        The string to clean.
-    bad_chars : list, optional
-        A list of *bad characters* to remove.
-
-    Returns
-    -------
-    str
-        String with *bad characters* removed.
-    """
-    if bad_chars and isinstance(bad_chars, Sequence):
-        for letter in bad_chars:
-            text = text.replace(letter, "")
-
-    return text
-
-
-def get_selections(view, extract_words=True, bad_chars=[]):
+def get_selections(view, return_whole_file=True, extract_words=False):
     """Get all selections.
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view.
+    view : sublime.View
+        A Sublime Text ``View`` object.
+    return_whole_file : bool, optional
+        If all selections are empty, return the whole view content.
     extract_words : bool, optional
         If no selection is found at region's coordinates, extract words from regions.
-    bad_chars : list, optional
-        A list of *bad characters* to remove.
 
     Returns
     -------
     list
-        A list of strings.
+        A list of regions.
     """
     selections = []
 
-    for region in view.sel():
-        sel = remove_bad_chars(view.substr(region), bad_chars=bad_chars) or \
-            (remove_bad_chars(view.substr(view.word(region)),
-                              bad_chars=bad_chars) if extract_words else None)
+    if view:
+        for region in view.sel():
+            if extract_words and region.empty():
+                word = view.word(region)
 
-        if sel:
-            selections.append(sel)
+                if word:
+                    selections.append(word)
+                    continue
 
-    return selections if selections else None
+            if not region.empty():
+                selections.append(region)
+
+        if len(selections) == 0 and return_whole_file:
+            selections.append(sublime.Region(0, view.size()))
+
+    return selections
 
 
-def get_executable_from_settings(view, settings):
+def replace_all_selections(view, edit, replacement_data):
+    """Replace all selections.
+
+    Parameters
+    ----------
+    view : sublime.View
+        A Sublime Text ``View`` object.
+    edit : sublime.Edit
+        A Sublime Text ``Edit`` object.
+    replacement_data : list
+        A list of tuples with two elements. The first element is a ``sublime.Region`` and the
+        second element is the text that will be placed into the region.
+    """
+    offset = 0
+
+    for old_region, new_data in sorted(replacement_data, key=lambda t: t[0].begin()):
+        if offset:
+            new_region = sublime.Region(
+                old_region.begin() + offset, old_region.end() + offset
+            )
+        else:
+            new_region = old_region
+
+        offset += len(new_data) - old_region.size()
+
+        view.replace(edit, new_region, new_data)
+
+
+def get_executable_from_settings(view, exec_list):
     """Get executable.
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view.
-    settings : list
+    view : sublime.View
+        A Sublime Text ``View`` object.
+    exec_list : str, list
         The list of executable names and/or paths to check.
 
     Returns
@@ -149,9 +165,12 @@ def get_executable_from_settings(view, settings):
     None
         No program found.
     """
-    settings = substitute_variables(get_view_context(view), settings)
+    exec_list = substitute_variables(get_view_context(view), exec_list)
 
-    for exec in settings:
+    if isinstance(exec_list, str):
+        exec_list = [exec_list]
+
+    for exec in exec_list:
         if exec and (cmd_utils.can_exec(exec) or cmd_utils.which(exec)):
             return exec
 
@@ -206,8 +225,8 @@ def guess_project_root_of_view(view):
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view.
+    view : sublime.View
+        A Sublime Text ``View`` object.
 
     Returns
     -------
@@ -246,15 +265,16 @@ def get_file_path(view):
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view.
+    view : sublime.View
+        A Sublime Text ``View`` object.
 
     Returns
     -------
     str
         The view's file path.
     """
-    return str(view.file_name()) if view and view.file_name() else ""
+    file_path = view.file_name()
+    return str(file_path) if view and file_path else ""
 
 
 def get_filename(view):
@@ -262,8 +282,8 @@ def get_filename(view):
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view.
+    view : sublime.View
+        A Sublime Text ``View`` object.
 
     Returns
     -------
@@ -274,7 +294,12 @@ def get_filename(view):
     ----
     Borrowed from SublimeLinter.
     """
-    return view.file_name() or "<untitled {}>".format(view.buffer_id())
+    file_path = get_file_path(view)
+    return (
+        os.path.basename(file_path)
+        if file_path
+        else "<untitled {}>".format(view.buffer_id())
+    )
 
 
 def _extract_window_variables(window):
@@ -284,8 +309,8 @@ def _extract_window_variables(window):
 
     Parameters
     ----------
-    window : object
-        A sublime.Window object.
+    window : sublime.Window
+        A Sublime Text ``Window`` object.
 
     Returns
     -------
@@ -308,8 +333,8 @@ def get_view_context(view, additional_context=None):
 
     Parameters
     ----------
-    view : object
-        A Sublime Text view.
+    view : sublime.View
+        A Sublime Text ``View`` object.
     additional_context : None, optional
         Additional context.
 
@@ -321,7 +346,9 @@ def get_view_context(view, additional_context=None):
     """
     view = view or sublime.active_window().active_view()
     window = view.window() if view else sublime.active_window()
-    context = ChainMap({}, _extract_window_variables(window) if window else {}, os.environ)
+    context = ChainMap(
+        {}, _extract_window_variables(window) if window else {}, os.environ
+    )
 
     project_folder = guess_project_root_of_view(view)
 
@@ -352,51 +379,6 @@ def get_view_context(view, additional_context=None):
     return context
 
 
-def distinct_until_buffer_changed(method):
-    """Distinct until buffer changed.
-
-    Sublime has problems to hold the distinction between buffers and views.
-    It usually emits multiple identical events if you have multiple views
-    into the same buffer.
-
-    Parameters
-    ----------
-    method : method
-        Method to wrap.
-
-    Returns
-    -------
-    method
-        Wrapped method.
-    """
-    last_call = None
-
-    @wraps(method)
-    def wrapper(self, view):
-        """Wrapper.
-
-        Parameters
-        ----------
-        view : object
-            An instance of ``sublime.View``.
-
-        Returns
-        -------
-        None
-            Halt execution.
-        """
-        nonlocal last_call
-
-        this_call = (view.buffer_id(), view.change_count())
-        if this_call == last_call:
-            return
-
-        last_call = this_call
-        method(self, view)
-
-    return wrapper
-
-
 def reload_plugins(prefix):
     """Reload Sublime 'plugins' using official API.
 
@@ -416,121 +398,77 @@ def reload_plugins(prefix):
         sublime_plugin.reload_plugin(name)
 
 
-'''
-NOTE: This classes won't work anymore in Sublime Text 4.
-In Sublime Text 3 I was able to declare it here and sub-class it in a top-level plugin.
-In Sublime Text 4 I'm forced to declare it in a top-level plugin.
+def generate_keybindings_help_data(
+    help_data_commands, help_data_markup, spacer="&nbsp;", logger=None
+):
+    """Generate keybindings help data.
 
-class ProjectSettingsController():
-    @distinct_until_buffer_changed
-    def on_post_save_async(self, view):
-        # NOTE: Monitor this. I smell disaster!!! LOL
-        # It works good enough for now.
-        # Also keep an eye on settings.py > Settings > project_settings.
-        window = view.window()
-        filename = view.file_name()
-        if window and filename and window.project_file_name() == filename:
-            for window in sublime.windows():
-                if window.project_file_name() == filename:
-                    self._on_post_save_async_callback()
-            return
-
-    def _on_post_save_async_callback(self):
-        pass
-
-
-class SublimeConsoleController():
-    """Keep Sublime Text console always open on debug mode.
+    Parameters
+    ----------
+    help_data_commands : dict
+        Description
+    help_data_markup : str
+        Description
+    spacer : str, optional
+        Description
+    logger : None, optional
+        Description
     """
+    res_path = substitute_variables(
+        get_view_context(None), "Packages/User/Default ($platform).sublime-keymap"
+    )
 
-    def on_activated_async(self, view):
-        self._ody_display_console(view)
-
-    def on_new_async(self, view):
-        self._ody_display_console(view)
-
-    def _ody_display_console(self, view):
-        if view and view.is_valid() and \
-                not view.settings().get("is_widget") and \
-                not view.settings().get("edit_settings_view") and \
-                view.window() and view.window().active_panel() != "console":
-            view.window().run_command("show_panel", {"panel": "console"})
-'''
-
-
-class CompletionsSuperClass():
-    """Register completions from a plugin settings file.
-    """
-    _completions_scope = ""
-    _completions = []
-    _settings = {}
-    _logger = None
-
-    def __enabled(self, location):
-        """Check if completions should be triggered.
-
-        Parameters
-        ----------
-        location : int
-            A ``sublime.View`` point.
-
-        Returns
-        -------
-        bool
-            If an auto completions should be triggered.
-        """
-        if not getattr(self, "view", None) or not self._completions:
-            return False
-
-        if sublime.active_window().active_view().id() != self.view.id():
-            return False
-
-        if not self.view.match_selector(location,
-                                        self._settings.get("completions_scope", self._completions_scope)):
-            return False
-
-        return True
-
-    def on_query_completions(self, prefix, locations):
-        """On query completions.
-
-        Parameters
-        ----------
-        prefix : str
-            Text to complete.
-        locations : tuple
-            A list of points (a point is an :py:class:`int` that represents the offset from the
-            beginning of the editor buffer).
-
-        Returns
-        -------
-        tuple, None
-            A completions object.
-        """
-        if self.__enabled(locations[0]):
-            return (
-                self._completions,
-                self._settings.get("completions_ignore_content", False) *
-                sublime.INHIBIT_WORD_COMPLETIONS |
-                self._settings.get("completions_ignore_files", False) *
-                sublime.INHIBIT_EXPLICIT_COMPLETIONS
-            )
+    try:
+        res = sublime.decode_value(sublime.load_resource(res_path))
+    except Exception as err:
+        if logger:
+            logger.error(err)
 
         return None
 
-    @classmethod
-    def update_completions(self):
-        """Update completions.
-        """
-        try:
-            self._completions = [[c["trigger"], c["contents"]]
-                                 for c in self._settings.get("completions", [])]
-        except KeyError:
-            sublime.status_message("Error updating completions")
-            self._completions = []
-            self._logger.error(
-                "Completions must be a list of dictionaries with only two keys ('trigger' and 'contents')."
+    desired_commands_set = set([d["command"] for d in help_data_commands.values()])
+    filtered_keybindings = [kb for kb in res if (kb["command"] in desired_commands_set)]
+    joined_keys = []
+    help_data_keys = {}
+
+    for help_text, cmd_data in help_data_commands.items():
+        for kb in filtered_keybindings:
+            keys_list = kb.get("keys", None)
+            if all(
+                (
+                    cmd_data.get("args", None) == kb.get("args", None),
+                    cmd_data["command"] == kb.get("command", None),
+                    keys_list,
+                )
+            ):
+                keys_str = ", ".join(keys_list)
+                joined_keys.append(keys_str)
+
+                if help_text in help_data_keys:
+                    help_data_keys[help_text].append(keys_str)
+                else:
+                    help_data_keys[help_text] = [keys_str]
+
+    help_markup = ""
+    justification = len(max(joined_keys, key=len)) + 2
+
+    for help_text, keys in help_data_keys.items():
+        keys.sort()
+        last_key = keys[-1]
+        rest_of_keys = keys[:-1]
+
+        for key in rest_of_keys:
+            help_markup += help_data_markup.format(key=key, description="") + "\n"
+
+        help_markup += (
+            help_data_markup.format(
+                key=last_key.ljust(justification, "|").replace("|", spacer),
+                description=help_text,
             )
+            + "\n"
+        )
+
+    return help_markup
 
 
 if __name__ == "__main__":

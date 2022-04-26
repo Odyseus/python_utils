@@ -1,83 +1,76 @@
 # -*- coding: utf-8 -*-
-"""Queue.
-
-Attributes
-----------
-MYPY : bool
-    MyPy module utilization(?).
-timers : dict
-    Map from key to :any:`threading.Timer` objects.
+"""Queue management utilities.
 """
 import threading
 
-MYPY = False
-if MYPY:
-    from typing import Callable, Dict, Hashable
 
-    Key = Hashable
+class Queue:
+    """Queue manager.
 
-
-timers = {}  # type: Dict[Key, threading.Timer]
-
-
-def debounce(callback, delay, key):
-    """Execute a method after a delay.
-
-    Parameters
+    Attributes
     ----------
-    callback : method
-        Method to execute.
-    delay : int
-        Execution delay.
-    key : str
-        Timer registration key.
-
-    Returns
-    -------
-    threading.Timer
-        Instantiated timer.
+    timers : dict
+        Timers storage.
     """
-    # type: (Callable[[], None], float, Key) -> threading.Timer
-    try:
-        timers[key].cancel()
-    except KeyError:
-        pass
+    def __init__(self):
+        """Initialization.
+        """
+        self.timers = {}
 
-    timers[key] = timer = threading.Timer(delay / 1000, callback)
-    timer.start()
-    return timer
+    def debounce(self, callback, delay, key):
+        """Execute a method after a delay.
 
+        Parameters
+        ----------
+        callback : method
+            Method to execute.
+        delay : int
+            Execution delay.
+        key : str
+            Timer registration key.
 
-def cleanup(key):
-    """Unregister a timer.
-
-    Parameters
-    ----------
-    key : str
-        Timer registration key.
-    """
-    # type: (Key) -> None
-    try:
-        timers.pop(key).cancel()
-    except KeyError:
-        pass
-
-
-def unload():
-    """Unregister all timers.
-
-    Returns
-    -------
-    None
-        Continue loop(?).
-    """
-    while True:
+        Returns
+        -------
+        threading.Timer
+            Instantiated timer.
+        """
         try:
-            _key, timer = timers.popitem()
+            self.timers[key].cancel()
         except KeyError:
-            return
-        else:
-            timer.cancel()
+            pass
+
+        self.timers[key] = timer = threading.Timer(delay / 1000, callback)
+        timer.start()
+        return timer
+
+    def cleanup(self, key):
+        """Unregister a timer.
+
+        Parameters
+        ----------
+        key : str
+            Timer registration key.
+        """
+        try:
+            self.timers.pop(key).cancel()
+        except KeyError:
+            pass
+
+    def unload(self):
+        """Unregister all timers.
+
+        Returns
+        -------
+        None
+            Stop looping(?).
+        """
+        while True:
+            try:
+                _key, timer = self.timers.popitem()
+            except KeyError:
+                return
+            else:
+                timer.cancel()
 
 
 if __name__ == "__main__":
