@@ -77,6 +77,7 @@ def generate_docs(root_folder="",
                   apidoc_paths_rel_to_root=[],
                   doctree_temp_location_rel_to_sys_temp="",
                   ignored_modules=[],
+                  generate_html=True,
                   generate_api_docs=False,
                   update_inventories=False,
                   force_clean_build=False,
@@ -103,6 +104,8 @@ def generate_docs(root_folder="",
         A list of paths to Python modules relative to the root_folder. These are ignored
         modules whose docstrings are a mess and/or are incomplete. Because such docstrings
         will produce hundred of annoying Sphinx warnings.
+    generate_html : bool, optional
+        Generate HTML.
     generate_api_docs : bool
         If False, do not extract docstrings from Python modules.
     update_inventories : bool, optional
@@ -121,10 +124,6 @@ def generate_docs(root_folder="",
     docs_destination_path = os.path.join(root_folder, docs_dest_path_rel_to_root)
 
     check_inventories_existence(update_inventories, docs_sources_path, logger)
-
-    if force_clean_build:
-        rmtree(doctree_temp_location, ignore_errors=True)
-        rmtree(docs_destination_path, ignore_errors=True)
 
     if generate_api_docs:
         logger.info(shell_utils.get_cli_separator("-"), date=False)
@@ -159,14 +158,25 @@ def generate_docs(root_folder="",
             logger.info(shell_utils.get_cli_separator("-"), date=False)
             logger.info("**Building coverage data...**")
 
-            sphinx_main(argv=[docs_sources_path, "-b", "coverage",
-                              "-d", doctree_temp_location, docs_sources_path + "/coverage"])
-    finally:
-        logger.info(shell_utils.get_cli_separator("-"), date=False)
-        logger.info("**Generating HTML documentation...**")
+            if force_clean_build:
+                rmtree(doctree_temp_location, ignore_errors=True)
 
-        sphinx_main(argv=[docs_sources_path, "-b", "html", "-d", doctree_temp_location,
-                          docs_destination_path])
+            sphinx_main(argv=[docs_sources_path, "-b", "coverage",
+                              "-d", doctree_temp_location, os.path.join(docs_sources_path, "coverage")])
+    finally:
+        if generate_html:
+            logger.info(shell_utils.get_cli_separator("-"), date=False)
+            logger.info("**Generating HTML documentation...**")
+
+            if force_clean_build:
+                rmtree(docs_destination_path, ignore_errors=True)
+
+                # NOTE: If coverage was built do not delete doctree_temp_location, make use of it.
+                if not build_coverage:
+                    rmtree(doctree_temp_location, ignore_errors=True)
+
+            sphinx_main(argv=[docs_sources_path, "-b", "html", "-d", doctree_temp_location,
+                              docs_destination_path])
 
 
 def generate_man_pages(root_folder="",
