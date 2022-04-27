@@ -14,6 +14,17 @@ import sublime_plugin
 from .. import cmd_utils
 
 
+def is_editable_view(view):
+    return all(
+        (
+            view and not view.element(),
+            view and not view.is_scratch(),
+            view and not view.is_read_only(),
+            view and not view.is_loading(),
+        )
+    )
+
+
 def has_right_syntax(view, view_syntaxes=[], strict=False):
     """Has right syntax.
 
