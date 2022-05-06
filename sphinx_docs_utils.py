@@ -82,6 +82,7 @@ def generate_docs(root_folder="",
                   update_inventories=False,
                   force_clean_build=False,
                   build_coverage=True,
+                  build_doctest=False,
                   logger=None):
     """Build this application documentation.
 
@@ -103,7 +104,7 @@ def generate_docs(root_folder="",
     ignored_modules : list, optional
         A list of paths to Python modules relative to the root_folder. These are ignored
         modules whose docstrings are a mess and/or are incomplete. Because such docstrings
-        will produce hundred of annoying Sphinx warnings.
+        will produce hundreds of annoying Sphinx warnings.
     generate_html : bool, optional
         Generate HTML.
     generate_api_docs : bool
@@ -114,6 +115,8 @@ def generate_docs(root_folder="",
     force_clean_build : bool, optional
         Remove destination and doctrees directories before building the documentation.
     build_coverage : bool, optional
+        If True, run :py:mod:`doctest` tests.
+    build_doctest : bool, optional
         If True, build Sphinx coverage documents.
     logger : LogSystem
         The logger.
@@ -129,16 +132,13 @@ def generate_docs(root_folder="",
         logger.info(shell_utils.get_cli_separator("-"), date=False)
         logger.info("**Generating automodule directives...**")
 
-        # NOTE: Countermeasure for retarded new Sphinx behavior.
-        # https://github.com/sphinx-doc/sphinx/issues/8664
-        # In short, I have to force down os.environ's throat the SPHINX_APIDOC_OPTIONS environment
-        # variable because the options it contains aren't exposed to be passed as arguments.
-        # By default, SPHINX_APIDOC_OPTIONS will contain the undoc-members option, overriding its
-        # value without the undoc-members option will prevent apidoc from belching a trillion
-        # warnings unnecessarily.
-        os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
+        # NOTE: Force to create ``.. auto*`` directives with only the :members: option set.
+        # This way I can set all autodoc options in conf.py file > autodoc_default_options.
+        os.environ["SPHINX_APIDOC_OPTIONS"] = "members"
         from sphinx.ext.apidoc import main as apidoc_main
 
+        # NOTE: Do not add more arguments to control ``.. auto*`` directives.
+        # Set all autodoc options in conf.py file > autodoc_default_options.
         commmon_args = ["--module-first", "--separate", "--private",
                         "--force", "--suffix", "rst", "--output-dir"]
 
@@ -153,30 +153,42 @@ def generate_docs(root_folder="",
                 os.path.join(root_folder, rel_source_path)
             ] + ignored_modules)
 
-    try:
-        if build_coverage:
-            logger.info(shell_utils.get_cli_separator("-"), date=False)
-            logger.info("**Building coverage data...**")
+    if build_coverage:
+        logger.info(shell_utils.get_cli_separator("-"), date=False)
+        logger.info("**Building coverage data...**")
 
-            if force_clean_build:
+        if force_clean_build:
+            rmtree(doctree_temp_location, ignore_errors=True)
+
+        sphinx_main(argv=[docs_sources_path, "-b", "coverage",
+                          "-d", doctree_temp_location, os.path.join(docs_sources_path, "coverage")])
+
+    if build_doctest:
+        logger.info(shell_utils.get_cli_separator("-"), date=False)
+        logger.info("**Building doctest tests...**")
+
+        # NOTE: build_coverage already deleted and re-created temporary files.
+        # Do not delete them; make use of them.
+        if force_clean_build and not build_coverage:
+            rmtree(doctree_temp_location, ignore_errors=True)
+
+        sphinx_main(argv=[docs_sources_path, "-b", "doctest",
+                    "-d", doctree_temp_location, os.path.join(docs_sources_path, "doctest")])
+
+    if generate_html:
+        logger.info(shell_utils.get_cli_separator("-"), date=False)
+        logger.info("**Generating HTML documentation...**")
+
+        if force_clean_build:
+            rmtree(docs_destination_path, ignore_errors=True)
+
+            # NOTE: build_coverage or build_doctest already deleted and re-created temporary files.
+            # Do not delete them; make use of them.
+            if not build_coverage and not build_doctest:
                 rmtree(doctree_temp_location, ignore_errors=True)
 
-            sphinx_main(argv=[docs_sources_path, "-b", "coverage",
-                              "-d", doctree_temp_location, os.path.join(docs_sources_path, "coverage")])
-    finally:
-        if generate_html:
-            logger.info(shell_utils.get_cli_separator("-"), date=False)
-            logger.info("**Generating HTML documentation...**")
-
-            if force_clean_build:
-                rmtree(docs_destination_path, ignore_errors=True)
-
-                # NOTE: If coverage was built do not delete doctree_temp_location, make use of it.
-                if not build_coverage:
-                    rmtree(doctree_temp_location, ignore_errors=True)
-
-            sphinx_main(argv=[docs_sources_path, "-b", "html", "-d", doctree_temp_location,
-                              docs_destination_path])
+        sphinx_main(argv=[docs_sources_path, "-b", "html", "-d", doctree_temp_location,
+                          docs_destination_path])
 
 
 def generate_man_pages(root_folder="",
