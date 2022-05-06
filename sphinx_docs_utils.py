@@ -14,9 +14,9 @@ from . import tqdm_wget
 from .misc_utils import get_system_tempdir
 
 
-def check_inventories_existence(update_inventories=False,
-                                docs_sources_path="",
-                                logger=None):
+def check_inventories_existence(
+    update_inventories=False, docs_sources_path="", logger=None
+):
     """Check inventories existence. Download them if they don't exist.
 
     These inventory files are the ones used by the intersphinx Sphinx extension. Since
@@ -71,19 +71,21 @@ def check_inventories_existence(update_inventories=False,
                 logger.info(inv_path, date=False)
 
 
-def generate_docs(root_folder="",
-                  docs_src_path_rel_to_root="",
-                  docs_dest_path_rel_to_root="docs",
-                  apidoc_paths_rel_to_root=[],
-                  doctree_temp_location_rel_to_sys_temp="",
-                  ignored_modules=[],
-                  generate_html=True,
-                  generate_api_docs=False,
-                  update_inventories=False,
-                  force_clean_build=False,
-                  build_coverage=True,
-                  build_doctest=False,
-                  logger=None):
+def generate_docs(
+    root_folder="",
+    docs_src_path_rel_to_root="",
+    docs_dest_path_rel_to_root="docs",
+    apidoc_paths_rel_to_root=[],
+    doctree_temp_location_rel_to_sys_temp="",
+    ignored_modules=[],
+    generate_html=True,
+    generate_api_docs=False,
+    update_inventories=False,
+    force_clean_build=False,
+    build_coverage=True,
+    build_doctest=False,
+    logger=None,
+):
     """Build this application documentation.
 
     Parameters
@@ -121,8 +123,9 @@ def generate_docs(root_folder="",
     logger : LogSystem
         The logger.
     """
-    doctree_temp_location = os.path.join(get_system_tempdir(),
-                                         doctree_temp_location_rel_to_sys_temp)
+    doctree_temp_location = os.path.join(
+        get_system_tempdir(), doctree_temp_location_rel_to_sys_temp
+    )
     docs_sources_path = os.path.join(root_folder, docs_src_path_rel_to_root)
     docs_destination_path = os.path.join(root_folder, docs_dest_path_rel_to_root)
 
@@ -139,8 +142,15 @@ def generate_docs(root_folder="",
 
         # NOTE: Do not add more arguments to control ``.. auto*`` directives.
         # Set all autodoc options in conf.py file > autodoc_default_options.
-        commmon_args = ["--module-first", "--separate", "--private",
-                        "--force", "--suffix", "rst", "--output-dir"]
+        commmon_args = [
+            "--module-first",
+            "--separate",
+            "--private",
+            "--force",
+            "--suffix",
+            "rst",
+            "--output-dir",
+        ]
 
         for rel_source_path, rel_destination_path in apidoc_paths_rel_to_root:
             apidoc_destination_path = os.path.join(root_folder, rel_destination_path)
@@ -148,10 +158,11 @@ def generate_docs(root_folder="",
             if force_clean_build:
                 rmtree(apidoc_destination_path, ignore_errors=True)
 
-            apidoc_main(argv=commmon_args + [
-                apidoc_destination_path,
-                os.path.join(root_folder, rel_source_path)
-            ] + ignored_modules)
+            apidoc_main(
+                argv=commmon_args
+                + [apidoc_destination_path, os.path.join(root_folder, rel_source_path)]
+                + ignored_modules
+            )
 
     if build_coverage:
         logger.info(shell_utils.get_cli_separator("-"), date=False)
@@ -160,8 +171,16 @@ def generate_docs(root_folder="",
         if force_clean_build:
             rmtree(doctree_temp_location, ignore_errors=True)
 
-        sphinx_main(argv=[docs_sources_path, "-b", "coverage",
-                          "-d", doctree_temp_location, os.path.join(docs_sources_path, "coverage")])
+        sphinx_main(
+            argv=[
+                docs_sources_path,
+                "-b",
+                "coverage",
+                "-d",
+                doctree_temp_location,
+                os.path.join(docs_sources_path, "coverage"),
+            ]
+        )
 
     if build_doctest:
         logger.info(shell_utils.get_cli_separator("-"), date=False)
@@ -172,8 +191,16 @@ def generate_docs(root_folder="",
         if force_clean_build and not build_coverage:
             rmtree(doctree_temp_location, ignore_errors=True)
 
-        sphinx_main(argv=[docs_sources_path, "-b", "doctest",
-                    "-d", doctree_temp_location, os.path.join(docs_sources_path, "doctest")])
+        sphinx_main(
+            argv=[
+                docs_sources_path,
+                "-b",
+                "doctest",
+                "-d",
+                doctree_temp_location,
+                os.path.join(docs_sources_path, "doctest"),
+            ]
+        )
 
     if generate_html:
         logger.info(shell_utils.get_cli_separator("-"), date=False)
@@ -187,15 +214,25 @@ def generate_docs(root_folder="",
             if not build_coverage and not build_doctest:
                 rmtree(doctree_temp_location, ignore_errors=True)
 
-        sphinx_main(argv=[docs_sources_path, "-b", "html", "-d", doctree_temp_location,
-                          docs_destination_path])
+        sphinx_main(
+            argv=[
+                docs_sources_path,
+                "-b",
+                "html",
+                "-d",
+                doctree_temp_location,
+                docs_destination_path,
+            ]
+        )
 
 
-def generate_man_pages(root_folder="",
-                       docs_src_path_rel_to_root="",
-                       docs_dest_path_rel_to_root="",
-                       doctree_temp_location_rel_to_sys_temp="",
-                       logger=None):
+def generate_man_pages(
+    root_folder="",
+    docs_src_path_rel_to_root="",
+    docs_dest_path_rel_to_root="",
+    doctree_temp_location_rel_to_sys_temp="",
+    logger=None,
+):
     """Generate man pages.
 
     Parameters
@@ -214,13 +251,22 @@ def generate_man_pages(root_folder="",
     """
     logger.info(shell_utils.get_cli_separator("-"), date=False)
     logger.info("**Generating manual pages...**")
-    doctree_temp_location = os.path.join(get_system_tempdir(),
-                                         doctree_temp_location_rel_to_sys_temp)
+    doctree_temp_location = os.path.join(
+        get_system_tempdir(), doctree_temp_location_rel_to_sys_temp
+    )
     docs_sources_path = os.path.join(root_folder, docs_src_path_rel_to_root)
     man_pages_destination_path = os.path.join(root_folder, docs_dest_path_rel_to_root)
 
-    sphinx_main(argv=[docs_sources_path, "-b", "man", "-d", doctree_temp_location,
-                      man_pages_destination_path])
+    sphinx_main(
+        argv=[
+            docs_sources_path,
+            "-b",
+            "man",
+            "-d",
+            doctree_temp_location,
+            man_pages_destination_path,
+        ]
+    )
 
 
 if __name__ == "__main__":
