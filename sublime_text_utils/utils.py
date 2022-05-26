@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 """Various utilities.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from python_utils import logging_system
+    from typing import Any
+
 import os
 import sys
 
@@ -14,7 +22,44 @@ import sublime_plugin
 from .. import cmd_utils
 
 
-def is_editable_view(view):
+def evaluate_scope_selector(view: sublime.View, value: bool | str | list[str]) -> bool:
+    """Evaluate scope selector.
+
+    Parameters
+    ----------
+    view : sublime.View
+        A Sublime Text ``View`` object.
+    value : bool, str, list[str]
+        If value is a :py:class:`bool`, return it. If value is a :py:class:`str`, score the selector
+        in the passed ``view``. If value is a :py:class:`list`, join it with commas before score
+        the selectors in the passed ``view``.
+
+    Returns
+    -------
+    bool
+        The scored scope selector.
+    """
+    if isinstance(value, bool):
+        return value
+    elif isinstance(value, str):
+        return view.score_selector(0, value) > 0
+    elif isinstance(value, list):
+        return view.score_selector(0, ", ".join(value)) > 0
+
+
+def is_editable_view(view: sublime.View) -> bool:
+    """Check is ``view`` is editable.
+
+    Parameters
+    ----------
+    view : sublime.View
+        A Sublime Text ``View`` object.
+
+    Returns
+    -------
+    bool
+        If ``view`` is editable.
+    """
     return all(
         (
             view and not view.element(),
@@ -25,7 +70,9 @@ def is_editable_view(view):
     )
 
 
-def has_right_syntax(view, view_syntaxes=[], strict=False):
+def has_right_syntax(
+    view: sublime.View, view_syntaxes: str | list[str] = [], strict: bool = False
+) -> bool:
     """Has right syntax.
 
     Check if the view is of the desired syntax listed in ``view_syntaxes``.
@@ -34,7 +81,7 @@ def has_right_syntax(view, view_syntaxes=[], strict=False):
     ----------
     view : sublime.View
         A Sublime Text ``View`` object.
-    view_syntaxes : list, string, optional
+    view_syntaxes : list[str], str, optional
         List of syntaxes to check against.
     strict : bool, optional
         Perform equality checks instead of membership checks.
@@ -63,7 +110,7 @@ def has_right_syntax(view, view_syntaxes=[], strict=False):
     return False
 
 
-def has_right_extension(view, file_extensions=[]):
+def has_right_extension(view: sublime.View, file_extensions: list[str] | str = []) -> bool:
     """Has the right file extension.
 
     Parameters
@@ -82,8 +129,8 @@ def has_right_extension(view, file_extensions=[]):
     ----
     Borrowed from JSFormat.
     """
-    file_name = get_file_path(view)
-    ext = None
+    file_name: str = get_file_path(view)
+    ext: str | None = None
 
     if file_name:  # file exists, pull syntax type from extension
         ext = os.path.splitext(file_name)[1][1:]
@@ -94,7 +141,9 @@ def has_right_extension(view, file_extensions=[]):
     return False
 
 
-def get_selections(view, return_whole_file=True, extract_words=False):
+def get_selections(
+    view: sublime.View, return_whole_file: bool = True, extract_words: bool = False
+) -> list[sublime.Region]:
     """Get all selections.
 
     Parameters
@@ -108,10 +157,10 @@ def get_selections(view, return_whole_file=True, extract_words=False):
 
     Returns
     -------
-    list
+    list[sublime.Region]
         A list of regions.
     """
-    selections = []
+    selections: list[sublime.Region] = []
 
     if view:
         for region in view.sel():
@@ -131,7 +180,11 @@ def get_selections(view, return_whole_file=True, extract_words=False):
     return selections
 
 
-def replace_all_selections(view, edit, replacement_data):
+def replace_all_selections(
+    view: sublime.View,
+    edit: sublime.Edit,
+    replacement_data: list[tuple[sublime.Region, str]],
+) -> None:
     """Replace all selections.
 
     Parameters
@@ -144,22 +197,24 @@ def replace_all_selections(view, edit, replacement_data):
         A list of tuples with two elements. The first element is a ``sublime.Region`` and the
         second element is the text that will be placed into the region.
     """
-    offset = 0
+    offset: int = 0
 
     for old_region, new_data in sorted(replacement_data, key=lambda t: t[0].begin()):
+        new_region: sublime.Region = old_region
+
         if offset:
             new_region = sublime.Region(
                 old_region.begin() + offset, old_region.end() + offset
             )
-        else:
-            new_region = old_region
 
         offset += len(new_data) - old_region.size()
 
         view.replace(edit, new_region, new_data)
 
 
-def get_executable_from_settings(view, exec_list):
+def get_executable_from_settings(
+    view: sublime.View, exec: str | list[str]
+) -> str | None:
     """Get executable.
 
     Parameters
@@ -176,7 +231,9 @@ def get_executable_from_settings(view, exec_list):
     None
         No program found.
     """
-    exec_list = substitute_variables(get_view_context(view), exec_list)
+    exec_list: str | list[str] | dict = substitute_variables(
+        get_view_context(view), exec
+    )
 
     if isinstance(exec_list, str):
         exec_list = [exec_list]
@@ -188,7 +245,9 @@ def get_executable_from_settings(view, exec_list):
     return None
 
 
-def substitute_variables(variables, value):
+def substitute_variables(
+    variables: dict[str, str] | ChainMap, value: str | list | dict
+) -> Any:
     """Substitute variables.
 
     Utilizes Sublime Text's `expand_variables` API, which uses the `${varname}` syntax and
@@ -231,7 +290,7 @@ def substitute_variables(variables, value):
         return value
 
 
-def guess_project_root_of_view(view):
+def guess_project_root_of_view(view: sublime.View | None) -> str | None:
     """Guess project root folder from view.
 
     Parameters
@@ -250,15 +309,18 @@ def guess_project_root_of_view(view):
     ----
     Borrowed from SublimeLinter. I <3 these guys!
     """
-    window = view.window()
+    if view is None:
+        return None
+
+    window: sublime.Window = view.window()
     if not window:
         return None
 
-    folders = window.folders()
+    folders: list[str] = window.folders()
     if not folders:
         return None
 
-    filename = get_file_path(view)
+    filename: str = get_file_path(view)
 
     if not filename:
         return folders[0]
@@ -271,7 +333,7 @@ def guess_project_root_of_view(view):
     return None
 
 
-def get_file_path(view):
+def get_file_path(view: sublime.View | None) -> str:
     """Get file from view.
 
     Parameters
@@ -284,11 +346,14 @@ def get_file_path(view):
     str
         The view's file path.
     """
-    file_path = view.file_name()
+    if view is None:
+        return ""
+
+    file_path: str | None = view.file_name()
     return str(file_path) if view and file_path else ""
 
 
-def get_filename(view):
+def get_filename(view: sublime.View | None) -> str:
     """Get view's file name.
 
     Parameters
@@ -305,7 +370,10 @@ def get_filename(view):
     ----
     Borrowed from SublimeLinter.
     """
-    file_path = get_file_path(view)
+    if view is None:
+        return ""
+
+    file_path: str = get_file_path(view)
     return (
         os.path.basename(file_path)
         if file_path
@@ -313,7 +381,7 @@ def get_filename(view):
     )
 
 
-def _extract_window_variables(window):
+def _extract_window_variables(window: sublime.Window) -> dict:
     """Extract window variables.
 
     We explicitly want to compute all variables around the current file on our own.
@@ -328,7 +396,7 @@ def _extract_window_variables(window):
     dict
         Window variables.
     """
-    variables = window.extract_variables()
+    variables: dict = window.extract_variables()
 
     for key in ("file", "file_path", "file_name", "file_base_name", "file_extension"):
         variables.pop(key, None)
@@ -336,7 +404,9 @@ def _extract_window_variables(window):
     return variables
 
 
-def get_view_context(view, additional_context=None):
+def get_view_context(
+    view: sublime.View | None, additional_context: dict | None = None
+) -> ChainMap:
     """Get view context.
 
     Note that we ship a enhanced version for ``folder`` if you have multiple
@@ -355,13 +425,15 @@ def get_view_context(view, additional_context=None):
         Extended window variables with environment variables and more "persistent"
         files/folders names/paths.
     """
-    view = view or sublime.active_window().active_view()
-    window = view.window() if view else sublime.active_window()
-    context = ChainMap(
+    if not view:
+        view = sublime.active_window().active_view()
+
+    window: sublime.Window = view.window() if view else sublime.active_window()
+    context: ChainMap = ChainMap(
         {}, _extract_window_variables(window) if window else {}, os.environ
     )
 
-    project_folder = guess_project_root_of_view(view)
+    project_folder: str | None = guess_project_root_of_view(view)
 
     if project_folder:
         context["folder"] = project_folder
@@ -370,10 +442,10 @@ def get_view_context(view, additional_context=None):
     # ``active_view``, so we need to pass in all the relevant data around
     # the filename manually in case the user switches to a different
     # view, before we're done here.
-    filename = get_file_path(view)
+    filename: str = get_file_path(view)
 
     if filename:
-        basename = os.path.basename(filename)
+        basename: str = os.path.basename(filename)
         file_base_name, file_extension = os.path.splitext(basename)
 
         context["file"] = filename
@@ -390,7 +462,7 @@ def get_view_context(view, additional_context=None):
     return context
 
 
-def reload_plugins(prefix):
+def reload_plugins(prefix: str) -> None:
     """Reload Sublime 'plugins' using official API.
 
     Parameters
@@ -398,10 +470,10 @@ def reload_plugins(prefix):
     prefix : str
         Python module prefix.
     """
-    toplevel = []
+    toplevel: list[str] = []
     for name, module in sys.modules.items():
         if name.startswith(prefix):
-            depth = len(name.split("."))
+            depth: int = len(name.split("."))
             if depth == 2:
                 toplevel.append(name)
 
@@ -410,41 +482,58 @@ def reload_plugins(prefix):
 
 
 def generate_keybindings_help_data(
-    help_data_commands, help_data_markup, spacer="&nbsp;", logger=None
-):
+    help_data_commands: dict,
+    help_data_markup: str,
+    spacer: str = "&nbsp;",
+    logger: logging_system.Logger = None,
+) -> str | None:
     """Generate keybindings help data.
 
     Parameters
     ----------
     help_data_commands : dict
-        Description
+        A dictionary of dictionaries. The values in each dictionary should be command definitions
+        that should be looked up in the ``Packages/User/Default ($platform).sublime-keymap`` file.
+        Their keys should be a description for those commands.
     help_data_markup : str
-        Description
+        This should be a :py:class:`str` to use with :py:func:`format` and should have exactly two
+        placeholders (``{key}`` and ``{description}``).
     spacer : str, optional
-        Description
-    logger : None, optional
-        Description
+        The spacer character to use for justification.
+    logger : logging_system.Logger
+        The logger.
+
+    Returns
+    -------
+    str
+        A table like representation of keybindings mapped to their descriptions.
     """
-    res_path = substitute_variables(
+    res_path: str = substitute_variables(
         get_view_context(None), "Packages/User/Default ($platform).sublime-keymap"
     )
 
     try:
-        res = sublime.decode_value(sublime.load_resource(res_path))
+        res: dict = sublime.decode_value(sublime.load_resource(res_path))
     except Exception as err:
-        if logger:
+        if logger is not None:
             logger.error(err)
 
         return None
 
-    desired_commands_set = set([d["command"] for d in help_data_commands.values()])
-    filtered_keybindings = [kb for kb in res if (kb["command"] in desired_commands_set)]
-    joined_keys = []
-    help_data_keys = {}
+    desired_commands_set: set[str] = set(
+        [d["command"] for d in help_data_commands.values()]
+    )
+    filtered_keybindings: list[dict[str, Any]] = [
+        kb
+        for kb in res
+        if all(("command" in kb, "keys" in kb, kb["command"] in desired_commands_set))
+    ]
+    joined_keys: list[str] = []
+    help_data_keys: dict[str, list[str]] = {}
 
     for help_text, cmd_data in help_data_commands.items():
         for kb in filtered_keybindings:
-            keys_list = kb.get("keys", None)
+            keys_list: list[str] = kb["keys"]
             if all(
                 (
                     cmd_data.get("args", None) == kb.get("args", None),
@@ -452,7 +541,7 @@ def generate_keybindings_help_data(
                     keys_list,
                 )
             ):
-                keys_str = ", ".join(keys_list)
+                keys_str: str = ", ".join(keys_list)
                 joined_keys.append(keys_str)
 
                 if help_text in help_data_keys:
@@ -460,13 +549,13 @@ def generate_keybindings_help_data(
                 else:
                     help_data_keys[help_text] = [keys_str]
 
-    help_markup = ""
-    justification = len(max(joined_keys, key=len)) + 2
+    help_markup: str = ""
+    justification: int = len(max(joined_keys, key=len)) + 2
 
     for help_text, keys in help_data_keys.items():
         keys.sort()
-        last_key = keys[-1]
-        rest_of_keys = keys[:-1]
+        last_key: str = keys[-1]
+        rest_of_keys: list[str] = keys[:-1]
 
         for key in rest_of_keys:
             help_markup += help_data_markup.format(key=key, description="") + "\n"

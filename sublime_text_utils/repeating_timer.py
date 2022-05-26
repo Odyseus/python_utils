@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 """Repeating timer.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
+
 import threading
 
 
@@ -9,57 +17,58 @@ class RepeatingTimer:
 
     Attributes
     ----------
-    args
+    args : tuple
         Argumentsto pass to the executed function.
-    func : function
+    func : Callable[..., Any]
         The function to be executed by the timer.
-    interval_s : TYPE
-        Description
+    interval_s : int | float
+        Timer execution interval in seconds.
     is_running : bool
-        Description
-    kwargs
+        Timer running flag.
+    kwargs : dict
         Keyword argumentsto pass to the executed function.
-    timer : threading.Timer
+    timer : threading.Timer | None
         The timer instance.
     """
-    def __init__(self, interval_ms, func, *args, **kwargs):
+
+    def __init__(self, interval_ms: int | float, func: Callable[..., Any], *args, **kwargs) -> None:
         """Initialization.
 
         Parameters
         ----------
-        interval_ms : int
+        interval_ms : int | float
             Timer execution interval in milliseconds.
-        func : function
+        func : Callable[..., Any]
             The function to be executed by the timer.
         *args
             Argumentsto pass to the executed function.
         **kwargs
             Keyword argumentsto pass to the executed function.
         """
-        self.interval_s = interval_ms / 1000
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
-        self.timer = None
-        self.is_running = False
+        self.interval_s: int | float = interval_ms / 1000
+        self.func: Callable[..., Any] = func
+        self.args: tuple = args
+        self.kwargs: dict = kwargs
+        self.timer: threading.Timer | None = None
+        self.is_running: bool = False
 
-    def set_func(self, func, *args, **kwargs):
+    def set_func(self, func: Callable[..., Any], *args, **kwargs) -> None:
         """Set timer function callback.
 
         Parameters
         ----------
-        func : function
+        func : Callable[..., Any]
             The function to be executed by the timer.
         *args
             Argumentsto pass to the executed function.
         **kwargs
             Keyword argumentsto pass to the executed function.
         """
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
+        self.func: Callable[..., Any] = func
+        self.args: tuple = args
+        self.kwargs: dict = kwargs
 
-    def set_interval(self, interval_ms):
+    def set_interval(self, interval_ms: int) -> None:
         """Set repeating interval.
 
         Parameters
@@ -67,24 +76,21 @@ class RepeatingTimer:
         interval_ms : int
             Timer execution interval in milliseconds.
         """
-        self.interval_s = interval_ms / 1000
+        self.interval_s: int = interval_ms / 1000
 
-    def start(self):
-        """Start timer.
-        """
+    def start(self) -> None:
+        """Start timer."""
         self.timer = threading.Timer(self.interval_s, self._callback)
         self.timer.start()
         self.is_running = True
 
-    def cancel(self):
-        """Cancel timer.
-        """
+    def cancel(self) -> None:
+        """Cancel timer."""
         assert isinstance(self.timer, threading.Timer)
         self.timer.cancel()
         self.is_running = False
 
-    def _callback(self):
-        """Method that the timer will call.
-        """
+    def _callback(self) -> None:
+        """Method that the timer will call."""
         self.func(*self.args, **self.kwargs)
         self.start()

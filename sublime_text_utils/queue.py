@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 """Queue management utilities.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
+
 import threading
 
 
@@ -9,20 +17,20 @@ class Queue:
 
     Attributes
     ----------
-    timers : dict
+    timers : dict[str, threading.Timer]
         Timers storage.
     """
-    def __init__(self):
-        """Initialization.
-        """
-        self.timers = {}
 
-    def debounce(self, callback, delay, key):
+    def __init__(self) -> None:
+        """See :py:meth:`object.__init__`."""
+        self.timers: dict[str, threading.Timer] = {}
+
+    def debounce(self, callback: Callable[..., Any], delay: int, key: str) -> threading.Timer:
         """Execute a method after a delay.
 
         Parameters
         ----------
-        callback : method
+        callback : Callable[..., Any]
             Method to execute.
         delay : int
             Execution delay.
@@ -43,7 +51,7 @@ class Queue:
         timer.start()
         return timer
 
-    def cleanup(self, key):
+    def cleanup(self, key: str) -> None:
         """Unregister a timer.
 
         Parameters
@@ -56,7 +64,7 @@ class Queue:
         except KeyError:
             pass
 
-    def unload(self):
+    def unload(self) -> None:
         """Unregister all timers.
 
         Returns

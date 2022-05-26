@@ -22,18 +22,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
+
 import sublime
 
 from ..diff_match_patch import diff_match_patch
 
 
 class MergeException(Exception):
-    """MergeException.
-    """
+    """MergeException."""
+
     pass
 
 
-def _merge_code(view, edit, original, modified):
+def _merge_code(view: sublime.View, edit: sublime.Edit, original: str, modified: str) -> bool:
     """Merge code.
 
     Parameters
@@ -57,14 +59,14 @@ def _merge_code(view, edit, original, modified):
     MergeException
         Error merging.
     """
-    dmp = diff_match_patch()
-    diffs = dmp.diff_main(original, modified)
+    dmp: diff_match_patch = diff_match_patch()
+    diffs: list[tuple[int, str]] = dmp.diff_main(original, modified)
     dmp.diff_cleanupEfficiency(diffs)
-    i = 0
-    dirty = False
+    i: int = 0
+    dirty: bool = False
 
     for k, s in diffs:
-        ln = len(s)
+        ln: int = len(s)
 
         if k == 0:
             # match
@@ -91,7 +93,9 @@ def _merge_code(view, edit, original, modified):
     return dirty
 
 
-def merge_code(view, edit, original, modified):
+def merge_code(
+    view: sublime.View, edit: sublime.Edit, original: str, modified: str
+) -> tuple[bool, str]:
     """Merge code.
 
     Parameters
@@ -107,18 +111,18 @@ def merge_code(view, edit, original, modified):
 
     Returns
     -------
-    tuple
+    tuple[bool, str]
         View state and error.
     """
-    vs = view.settings()
-    ttts = vs.get("translate_tabs_to_spaces")
+    vs: sublime.Settings = view.settings()
+    ttts: bool = vs.get("translate_tabs_to_spaces")
 
     if not original.strip():
         return (False, "")
 
     vs.set("translate_tabs_to_spaces", False)
-    dirty = False
-    err = ""
+    dirty: bool = False
+    err: str = ""
 
     try:
         dirty = _merge_code(view, edit, original, modified)

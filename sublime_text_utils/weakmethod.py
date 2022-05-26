@@ -3,14 +3,17 @@
 
 Based on `WeakMethod (Python recipe) <https://code.activestate.com/recipes/81253>`__.
 """
+from __future__ import annotations
+
 from weakref import ref
 
 
 class _weak_callable:
     """Summary
     """
+
     def __init__(self, obj, func):
-        """Summary
+        """See :py:meth:`object.__init__`.
 
         Parameters
         ----------
@@ -23,7 +26,7 @@ class _weak_callable:
         self._meth = func
 
     def __call__(self, *args, **kws):
-        """Summary
+        """See :py:meth:`object.__call__`.
 
         Parameters
         ----------
@@ -43,7 +46,7 @@ class _weak_callable:
             return self._meth(*args, **kws)
 
     def __getattr__(self, attr):
-        """Summary
+        """See :py:meth:`object.__getattr__`.
 
         Parameters
         ----------
@@ -60,9 +63,9 @@ class _weak_callable:
         AttributeError
             Description
         """
-        if attr == '__self__':
+        if attr == "__self__":
             return self._obj
-        elif attr == '__func__':
+        elif attr == "__func__":
             return self._meth
         raise AttributeError(attr)
 
@@ -74,7 +77,7 @@ class WeakMethod:
     """
 
     def __init__(self, fn):
-        """Summary
+        """See :py:meth:`object.__init__`.
 
         Parameters
         ----------
@@ -97,7 +100,7 @@ class WeakMethod:
             self._meth = ref(fn)
 
     def __call__(self):
-        """Summary
+        """See :py:meth:`object.__call__`.
 
         Returns
         -------
@@ -117,7 +120,7 @@ class WeakMethod:
                 return _weak_callable(obj, meth)
 
     def __eq__(self, other):
-        """Summary
+        """See :py:meth:`object.__eq__`.
 
         Parameters
         ----------
@@ -136,7 +139,7 @@ class WeakMethod:
         )
 
     def __hash__(self):
-        """Summary
+        """See :py:meth:`object.__hash__`.
 
         Returns
         -------
@@ -149,8 +152,9 @@ class WeakMethod:
 class WeakMethodProxy(WeakMethod):
     """Summary
     """
+
     def __call__(self, *args, **kwargs):
-        """Summary
+        """See :py:meth:`object.__call__`.
 
         Parameters
         ----------
@@ -171,6 +175,6 @@ class WeakMethodProxy(WeakMethod):
         """
         func = super().__call__()
         if func is None:
-            raise ReferenceError('weak reference is gone')
+            raise ReferenceError("weak reference is gone")
         else:
             return func(*args, **kwargs)

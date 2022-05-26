@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 """Events manager.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
+
 import traceback
 
 from collections import defaultdict
@@ -11,46 +19,44 @@ class Events:
 
     Attributes
     ----------
-    listeners : collections.defaultdict
+    listeners : defaultdict
         Functions storage.
     map_fn_to_topic : dict
         Functions to topics map.
     """
 
-    def __init__(self):
-        """Initialization.
-        """
-        self.listeners = defaultdict(set)
-        self.map_fn_to_topic = {}
+    def __init__(self) -> None:
+        """See :py:meth:`object.__init__`."""
+        self.listeners: defaultdict = defaultdict(set)
+        self.map_fn_to_topic: dict = {}
 
-    def destroy(self):
-        """Perform cleanup of all stored events.
-        """
+    def destroy(self) -> None:
+        """Perform cleanup of all stored events."""
         self.listeners.clear()
         self.map_fn_to_topic.clear()
         self.listeners = defaultdict(set)
         self.map_fn_to_topic = {}
 
-    def subscribe(self, topic, fn):
+    def subscribe(self, topic: str, fn: Callable[..., Any]) -> None:
         """Register event.
 
         Parameters
         ----------
         topic : str
             Event name.
-        fn : method
+        fn : Callable[..., Any]
             Method to register.
         """
         self.listeners[topic].add(fn)
 
-    def unsubscribe(self, topic, fn):
+    def unsubscribe(self, topic: str, fn: Callable[..., Any]) -> None:
         """Unregister event.
 
         Parameters
         ----------
         topic : str
             Event name.
-        fn : method
+        fn : Callable[..., Any]
             Method to unregister.
         """
         try:
@@ -58,12 +64,12 @@ class Events:
         except KeyError:
             pass
 
-    def broadcast(self, topic, payload={}):
+    def broadcast(self, topic: str, payload: dict = {}) -> None:
         """Emit event.
 
         Parameters
         ----------
-        topic : srt
+        topic : str
             Event name.
         payload : dict, optional
             Parameters passed to executed method.
@@ -74,7 +80,7 @@ class Events:
             except Exception:
                 traceback.print_exc()
 
-    def on(self, topic):
+    def on(self, topic: str) -> Callable[[Callable[..., Any]], Any]:
         """Event registration decorator.
 
         Parameters
@@ -84,21 +90,21 @@ class Events:
 
         Returns
         -------
-        method
+        Callable[[Callable[..., Any]], Any]
             Decorator function.
         """
 
-        def inner(fn):
+        def inner(fn: Callable[..., Any]) -> Callable[..., Any]:
             """Decorator.
 
             Parameters
             ----------
-            fn : method
+            fn : Callable[..., Any]
                 Method to execute.
 
             Returns
             -------
-            method
+            Callable[..., Any]
                 Method to execute.
             """
             self.subscribe(topic, fn)
@@ -107,15 +113,15 @@ class Events:
 
         return inner
 
-    def off(self, fn):
+    def off(self, fn: Callable[..., Any]) -> None:
         """Remove event.
 
         Parameters
         ----------
-        fn : method
+        fn : Callable[..., Any]
             Method to unregister.
         """
-        topic = self.map_fn_to_topic.get(fn, None)
+        topic: str | None = self.map_fn_to_topic.get(fn, None)
         if topic:
             self.unsubscribe(topic, fn)
 

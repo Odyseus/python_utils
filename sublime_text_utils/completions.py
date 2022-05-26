@@ -5,11 +5,19 @@ Note
 ....
 I would write a trillion lines of Python just to avoid writing one line of JSON. LOL
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from python_utils import logging_system
+    from python_utils.sublime_text_utils.settings import SettingsManager
+
 import html
 
 import sublime
 
-_completions_settings_keys = (
+_completions_settings_keys: tuple = (
     ("completions", []),
     ("completions_user", []),
     ("completions_scope", ""),
@@ -20,110 +28,91 @@ _completions_settings_keys = (
 )
 
 
-_kind_map = {
-    "ambiguous": sublime.KIND_AMBIGUOUS,
-    "function": sublime.KIND_FUNCTION,
-    "keyword": sublime.KIND_KEYWORD,
-    "markup": sublime.KIND_MARKUP,
-    "namespace": sublime.KIND_NAMESPACE,
-    "navigation": sublime.KIND_NAVIGATION,
-    "snippet": sublime.KIND_SNIPPET,
-    "type": sublime.KIND_TYPE,
-    "variable": sublime.KIND_VARIABLE,
-}
-
-
-_kind_id_map = {
-    "ambiguous": sublime.KIND_ID_AMBIGUOUS,
-    "function": sublime.KIND_ID_FUNCTION,
-    "keyword": sublime.KIND_ID_KEYWORD,
-    "markup": sublime.KIND_ID_MARKUP,
-    "namespace": sublime.KIND_ID_NAMESPACE,
-    "navigation": sublime.KIND_ID_NAVIGATION,
-    "snippet": sublime.KIND_ID_SNIPPET,
-    "type": sublime.KIND_ID_TYPE,
-    "variable": sublime.KIND_ID_VARIABLE,
-}
-
-
-def get_kind_tuple(k):
-    """Get kind :py:class:`tuple`.
-
-    Convert a kind list as defined in a completions file (``["function", "m", "Method"]``)
-    into a kind that can be used in a ``sublime.CompletionItem`` element
-    (``(sublime.KIND_ID_FUNCTION, "m", "Method")``).
+def get_kind(kind_name: str, t: str = "tuple") -> int | tuple[int, str, str]:
+    """Get kind ID or tuple based on a kind name.
 
     Parameters
     ----------
-    k : list
-        A kind list in the form ``["function", "m", "Method"]``.
+    kind_name : str
+        A kind name.
+    t : str, optional
+        One of **tuple** or **id**.
 
     Returns
     -------
-    tuple
-        A kind :py:class:`tuple`.
+    int | tuple[int, str, str]
+        A kind ID or tuple.
     """
-    return (_kind_id_map.get(k[0]), k[1], k[2])
+    fallback_attr = "KIND_ID_AMBIGUOUS" if t == "id" else "KIND_AMBIGUOUS"
+    attr = "KIND_" + ("ID_" if t == "id" else "") + kind_name.upper()
+
+    return getattr(sublime, attr, getattr(sublime, fallback_attr))
 
 
 def create_completions_list(
-    settings,
-    kind=sublime.KIND_AMBIGUOUS,
-    completion_format=sublime.COMPLETION_FORMAT_SNIPPET,
-    details_template=None,
-    logger=None,
-):
+    settings: SettingsManager,
+    settings_prefix: str = "",
+    kind: str | list[str] = sublime.KIND_AMBIGUOUS,
+    completion_format: int = sublime.COMPLETION_FORMAT_SNIPPET,
+    details_template: str | None = None,
+    logger: logging_system.Logger = None,
+) -> sublime.CompletionList | list:
     """Create completions list.
 
     Parameters
     ----------
-    settings : settings.SettingsManager
+    settings : SettingsManager
         The settings object from which to get the completions settings from.
-    kind : TYPE, optional
+    settings_prefix : str, optional
+        The name of a settings could be prefixed. Instead of ``completions``, a setting could be
+        named ``plugin_name.completions``, with ``plugin_name.`` being the prefix.
+    kind : str | list[str], optional
         A kind used in case an item in the completions definitions do not specify one.
     completion_format : int, optional
         The format of the completion.
-    details_template : None, optional
-        Description
-    logger : SublimeLogger
+    details_template : str | None, optional
+        An HTML string that can be used as template for the ``details`` parameter of a
+        ``sublime.CompletionItem`` item. :py:meth:`format` will be called on the string
+        with the value of the ``contents`` key of a completion definition.
+    logger : logging_system.Logger, optional
         The logger.
+
+    Returns
+    -------
+    sublime.CompletionList | list
+        A list of completions that can be handled by the ``on_query_completions`` method. of a
+        ``sublime_plugin.EventListener`` or ``sublime_plugin.ViewEventListener`` class.
     """
-    completions_settings = {}
+    completions_settings: dict = {}
     try:
         for key, default_value in _completions_settings_keys:
-            val = settings.get(key, default_value)
+            val = settings.get(settings_prefix + key, default_value)
             completions_settings[key] = val
     except Exception as err:
         sublime.status_message("Error updating completions")
         logger.error(err)
 
-    try:
-        completions_items = []
+    ody_all_completions: sublime.CompletionList | list = []
+    completions_items: list[sublime.CompletionItem] = []
 
-        for c in (
-            completions_settings["completions"]
-            + completions_settings["completions_user"]
-        ):
-            item_args = {
+    try:
+        for c in completions_settings["completions"] + completions_settings["completions_user"]:
+            item_args: dict = {
                 "trigger": c["trigger"],
                 "completion": c["contents"],
             }
-            k = c.get("kind")
+            k: str | list[str] = c.get("kind")
 
             if isinstance(k, str):
-                item_args["kind"] = _kind_map.get(k, kind)
+                item_args["kind"] = get_kind(k, t="tuple")
             elif isinstance(k, list):
-                item_args["kind"] = get_kind_tuple(k)
+                item_args["kind"] = (get_kind(k[0], t="id"), k[1], k[2])
             else:
                 item_args["kind"] = kind
 
-            item_args["completion_format"] = (
-                c.get("completion_format") or completion_format
-            )
+            item_args["completion_format"] = c.get("completion_format") or completion_format
             item_args["details"] = c.get("details") or (
-                details_template.format(html.escape(c["contents"]))
-                if details_template
-                else ""
+                details_template.format(html.escape(c["contents"])) if details_template else ""
             )
 
             if c.get("annotation"):
@@ -133,8 +122,7 @@ def create_completions_list(
 
         ody_all_completions = sublime.CompletionList(
             completions_items,
-            completions_settings["inhibit_word_completions"]
-            * sublime.INHIBIT_WORD_COMPLETIONS
+            completions_settings["inhibit_word_completions"] * sublime.INHIBIT_WORD_COMPLETIONS
             | completions_settings["inhibit_explicit_completions"]
             * sublime.INHIBIT_EXPLICIT_COMPLETIONS
             | completions_settings["dynamic_completions"] * sublime.DYNAMIC_COMPLETIONS
