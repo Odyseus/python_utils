@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 """Simple validator functions.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 import re
 
 from ipaddress import ip_address
@@ -9,10 +16,10 @@ from . import exceptions
 from . import file_utils
 
 
-_hostname_regex = re.compile(r"(?!-)[\w-]{1,63}(?<!-)$")
+_hostname_regex: re.Pattern = re.compile(r"(?!-)[\w-]{1,63}(?<!-)$")
 
 
-def is_valid_host(host):
+def is_valid_host(host: str) -> bool:
     """IDN compatible domain validation.
 
     Parameters
@@ -32,11 +39,12 @@ def is_valid_host(host):
     """
     host = host.rstrip(".")
 
-    return all([len(host) > 1,
-                len(host) < 253] + [_hostname_regex.match(x) for x in host.split(".")])
+    return all(
+        [len(host) > 1, len(host) < 253] + [bool(_hostname_regex.match(x)) for x in host.split(".")]
+    )
 
 
-def is_valid_ip(address):
+def is_valid_ip(address: str) -> bool:
     """Validate IP address (IPv4 or IPv6).
 
     Parameters
@@ -57,12 +65,12 @@ def is_valid_ip(address):
     return True
 
 
-def is_valid_integer(integer):
+def is_valid_integer(integer: str | int) -> bool:
     """Validate integer.
 
     Parameters
     ----------
-    integer : str
+    integer : str | int
         The string to validate.
 
     Returns
@@ -73,7 +81,7 @@ def is_valid_integer(integer):
     return str(integer).isdigit()
 
 
-def validate_output_path(x):
+def validate_output_path(x: str) -> str:
     """Validate output path.
 
     Checks that a given path is not a user's home folder nor "/".
@@ -97,12 +105,15 @@ def validate_output_path(x):
         raise exceptions.ValidationError("Seriously, don't be daft! Choose another location!")
     elif x == "/":
         raise exceptions.ValidationError(
-            "Are you freaking kidding me!? The root partition!? Use your brain!")
+            "Are you freaking kidding me!? The root partition!? Use your brain!"
+        )
 
     return x
 
 
-def generate_numeral_options_validator(num, stringify=True):
+def generate_numeral_options_validator(
+    num: int, stringify: bool = True
+) -> Callable[[str | int], str | int]:
     """Generate numeral options validator.
 
     Parameters
@@ -116,22 +127,27 @@ def generate_numeral_options_validator(num, stringify=True):
 
     Returns
     -------
-    method
+    Callable[[str | int], str | int]
         A function to validate a number.
+
+    Raises
+    ------
+    exceptions.ValidationError
+        Description
     """
     options_list = [str(n + 1) if stringify else n + 1 for n in list(range(num))]
 
-    def validate_options(x):
+    def validate_options(x: str | int) -> str | int:
         """Validate numeral options.
 
         Parameters
         ----------
-        x : str
+        x : str | int
             The entered option to validate.
 
         Returns
         -------
-        str
+        str | int
             The validated option.
 
         Raises
