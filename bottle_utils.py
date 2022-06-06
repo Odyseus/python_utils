@@ -1,6 +1,18 @@
 # -*- coding: utf-8 -*-
 """Bottle.py utilities.
+
+Attributes
+----------
+bottle_app : bottle.Bottle
+    Description
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import logging_system
+
 import os
 
 try:
@@ -8,7 +20,7 @@ try:
 except (ImportError, SystemError):
     import bottle
 
-bottle_app = bottle.Bottle()
+bottle_app: bottle.Bottle = bottle.Bottle()
 
 
 _missing_psutil_msg = """Missing **psutil** module. Read the documentation.
@@ -17,7 +29,7 @@ Without this Python module, the server can only be stopped/restarted manually.
 """
 
 
-class WebApp():
+class WebApp:
     """Base web server.
 
     Attributes
@@ -28,7 +40,7 @@ class WebApp():
         The port number used by the web server.
     """
 
-    def __init__(self, host, port):
+    def __init__(self, host: str, port: str) -> None:
         """Initialization.
 
         Parameters
@@ -38,16 +50,15 @@ class WebApp():
         port : str
             The port number used by the web server.
         """
-        self.host = host
-        self.port = port
+        self.host: str = host
+        self.port: str = port
 
-    def run(self):
-        """Run web application.
-        """
+    def run(self) -> None:
+        """Run web application."""
         bottle_app.run(host=self.host, port=self.port)
 
 
-def start_server(server_args):
+def start_server(server_args: dict) -> None:
     """Start HTTP server.
 
     Parameters
@@ -56,23 +67,31 @@ def start_server(server_args):
         Server arguments.
     """
     os.chdir(server_args.get("www_root"))
-    os.execv(server_args.get("web_app_path"), [" "] + [
-        server_args.get("host"),
-        server_args.get("port"),
-        os.path.dirname(server_args.get("web_app_path"))
-    ])
+    os.execv(
+        server_args.get("web_app_path"),
+        [" "]
+        + [
+            server_args.get("host"),
+            server_args.get("port"),
+            os.path.dirname(server_args.get("web_app_path")),
+        ],
+    )
 
 
-def stop_server(restart=False, server_args={}, logger=None):
+def stop_server(
+    restart: bool = False,
+    server_args: dict[str, str | int] = {},
+    logger: logging_system.Logger = None,
+) -> None:
     """Stop HTTP server.
 
     Parameters
     ----------
     restart : bool, optional
         Whether to start the server after being stopped.
-    server_args : dict, optional
+    server_args : dict[str, str | int], optional
         Server arguments.
-    logger : None, optional
+    logger : logging_system.Logger, optional
         See :any:`LogSystem`.
 
     Returns
@@ -105,16 +124,20 @@ def stop_server(restart=False, server_args={}, logger=None):
         start_server(server_args)
 
 
-def handle_server(action="", server_args={}, logger=None):
+def handle_server(
+    action: str = "",
+    server_args: dict[str, str | int] = {},
+    logger: logging_system.Logger = None,
+) -> None:
     """Handle HTTP server.
 
     Parameters
     ----------
     action : str, optional
         Any of the following: start/stop/restart.
-    server_args : dict, optional
+    server_args : dict[str, str | int], optional
         Server arguments.
-    logger : None, optional
+    logger : logging_system.Logger, optional
         See :any:`LogSystem`.
     """
     if action == "start":
