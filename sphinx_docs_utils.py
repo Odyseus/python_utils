@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 """Utilities to generate documentations with Sphinx.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .logging_system import Logger
+
 import os
 
 from runpy import run_path
@@ -9,13 +16,12 @@ from sphinx.cmd.build import main as sphinx_main
 
 from . import exceptions
 from . import file_utils
-from . import shell_utils
 from . import tqdm_wget
 from .misc_utils import get_system_tempdir
 
 
 def check_inventories_existence(
-    update_inventories=False, docs_sources_path="", logger=None
+    update_inventories: bool = False, docs_sources_path: str = "", logger: Logger | None = None
 ):
     """Check inventories existence. Download them if they don't exist.
 
@@ -25,13 +31,13 @@ def check_inventories_existence(
 
     Parameters
     ----------
-    update_inventories : bool
+    update_inventories : bool, optional
         Whether to force the update of the inventory files. Inventory files will be updated
         anyway f they don't exist.
     docs_sources_path : str, optional
         Path to the documentation source files that will be used to store the
         downloaded inventories.
-    logger : LogSystem
+    logger : Logger | None, optional
         The logger.
 
     Raises
@@ -39,52 +45,54 @@ def check_inventories_existence(
     exceptions.KeyboardInterruption
         Halt execution on Ctrl + C press.
     """
-    logger.info(shell_utils.get_cli_separator("-"), date=False)
+    logger.sub_section()
     logger.info("**Handling inventory files...**")
-    mapping_file_path = os.path.join(docs_sources_path, "intersphinx_mapping.py")
+    mapping_file_path: str = os.path.join(docs_sources_path, "intersphinx_mapping.py")
 
     if file_utils.is_real_file(mapping_file_path):
-        intersphinx_mapping = run_path(mapping_file_path)["intersphinx_mapping"]
+        intersphinx_mapping: dict[str, tuple[str, str]] = run_path(mapping_file_path)[
+            "intersphinx_mapping"
+        ]
 
         logger.info("**Checking existence of inventory files...**")
 
         for url, inv in intersphinx_mapping.values():
-            inv_url = url + "/objects.inv"
-            inv_path = os.path.join(docs_sources_path, inv)
+            inv_url: str = url + "/objects.inv"
+            inv_path: str = os.path.join(docs_sources_path, inv)
 
             if update_inventories or not os.path.exists(inv_path):
                 os.makedirs(os.path.dirname(inv_path), exist_ok=True)
                 logger.info("**Downloading inventory file...**")
                 logger.info("**Download URL:**")
-                logger.info(inv_url, date=False)
+                logger.info(inv_url)
                 logger.info("**Download location:**")
-                logger.info(inv_path, date=False)
+                logger.info(inv_path)
 
                 try:
                     tqdm_wget.download(inv_url, inv_path)
                 except (KeyboardInterrupt, SystemExit):
                     raise exceptions.KeyboardInterruption()
                 except Exception as err:
-                    logger.error(err)
+                    logger.exception(err)
             else:
                 logger.info("**Inventory file exists:**")
-                logger.info(inv_path, date=False)
+                logger.info(inv_path)
 
 
 def generate_docs(
-    root_folder="",
-    docs_src_path_rel_to_root="",
-    docs_dest_path_rel_to_root="docs",
-    apidoc_paths_rel_to_root=[],
-    doctree_temp_location_rel_to_sys_temp="",
-    ignored_modules=[],
-    generate_html=True,
-    generate_api_docs=False,
-    update_inventories=False,
-    force_clean_build=False,
-    build_coverage=True,
-    build_doctest=False,
-    logger=None,
+    root_folder: str = "",
+    docs_src_path_rel_to_root: str = "",
+    docs_dest_path_rel_to_root: str = "docs",
+    apidoc_paths_rel_to_root: list[tuple[str, str]] = [],
+    doctree_temp_location_rel_to_sys_temp: str = "",
+    ignored_modules: list[str] = [],
+    generate_html: bool = True,
+    generate_api_docs: bool = False,
+    update_inventories: bool = False,
+    force_clean_build: bool = False,
+    build_coverage: bool = True,
+    build_doctest: bool = False,
+    logger: Logger | None = None,
 ):
     """Build this application documentation.
 
@@ -96,20 +104,20 @@ def generate_docs(
         Docs sources path relative to root_folder.
     docs_dest_path_rel_to_root : str, optional
         Built docs destination path relative to root_folder.
-    apidoc_paths_rel_to_root : list, optional
+    apidoc_paths_rel_to_root : list[tuple[str, str]], optional
         A list of tuples. Each tuple of length two contains the path to the Python modules
         folder at index zero from which to extract docstrings and the path to where to store
         the generated rst files at index one.
     doctree_temp_location_rel_to_sys_temp : str, optional
         Name of a temporary folder that will be used to create a path relative to the
         system temporary folder.
-    ignored_modules : list, optional
+    ignored_modules : list[str], optional
         A list of paths to Python modules relative to the root_folder. These are ignored
         modules whose docstrings are a mess and/or are incomplete. Because such docstrings
         will produce hundreds of annoying Sphinx warnings.
     generate_html : bool, optional
         Generate HTML.
-    generate_api_docs : bool
+    generate_api_docs : bool, optional
         If False, do not extract docstrings from Python modules.
     update_inventories : bool, optional
         Whether to force the update of the inventory files. Inventory files will be updated
@@ -120,19 +128,19 @@ def generate_docs(
         If True, run :py:mod:`doctest` tests.
     build_doctest : bool, optional
         If True, build Sphinx coverage documents.
-    logger : LogSystem
+    logger : Logger | None, optional
         The logger.
     """
-    doctree_temp_location = os.path.join(
+    doctree_temp_location: str = os.path.join(
         get_system_tempdir(), doctree_temp_location_rel_to_sys_temp
     )
-    docs_sources_path = os.path.join(root_folder, docs_src_path_rel_to_root)
-    docs_destination_path = os.path.join(root_folder, docs_dest_path_rel_to_root)
+    docs_sources_path: str = os.path.join(root_folder, docs_src_path_rel_to_root)
+    docs_destination_path: str = os.path.join(root_folder, docs_dest_path_rel_to_root)
 
     check_inventories_existence(update_inventories, docs_sources_path, logger)
 
     if generate_api_docs:
-        logger.info(shell_utils.get_cli_separator("-"), date=False)
+        logger.sub_section()
         logger.info("**Generating automodule directives...**")
 
         # NOTE: Force to create ``.. auto*`` directives with only the :members: option set.
@@ -142,7 +150,7 @@ def generate_docs(
 
         # NOTE: Do not add more arguments to control ``.. auto*`` directives.
         # Set all autodoc options in conf.py file > autodoc_default_options.
-        commmon_args = [
+        commmon_args: list[str] = [
             "--module-first",
             "--separate",
             "--private",
@@ -153,7 +161,7 @@ def generate_docs(
         ]
 
         for rel_source_path, rel_destination_path in apidoc_paths_rel_to_root:
-            apidoc_destination_path = os.path.join(root_folder, rel_destination_path)
+            apidoc_destination_path: str = os.path.join(root_folder, rel_destination_path)
 
             if force_clean_build:
                 rmtree(apidoc_destination_path, ignore_errors=True)
@@ -165,7 +173,7 @@ def generate_docs(
             )
 
     if build_coverage:
-        logger.info(shell_utils.get_cli_separator("-"), date=False)
+        logger.sub_section()
         logger.info("**Building coverage data...**")
 
         if force_clean_build:
@@ -183,7 +191,7 @@ def generate_docs(
         )
 
     if build_doctest:
-        logger.info(shell_utils.get_cli_separator("-"), date=False)
+        logger.sub_section()
         logger.info("**Building doctest tests...**")
 
         # NOTE: build_coverage already deleted and re-created temporary files.
@@ -203,7 +211,7 @@ def generate_docs(
         )
 
     if generate_html:
-        logger.info(shell_utils.get_cli_separator("-"), date=False)
+        logger.sub_section()
         logger.info("**Generating HTML documentation...**")
 
         if force_clean_build:
@@ -227,11 +235,11 @@ def generate_docs(
 
 
 def generate_man_pages(
-    root_folder="",
-    docs_src_path_rel_to_root="",
-    docs_dest_path_rel_to_root="",
-    doctree_temp_location_rel_to_sys_temp="",
-    logger=None,
+    root_folder: str = "",
+    docs_src_path_rel_to_root: str = "",
+    docs_dest_path_rel_to_root: str = "",
+    doctree_temp_location_rel_to_sys_temp: str = "",
+    logger: Logger | None = None,
 ):
     """Generate man pages.
 
@@ -246,16 +254,16 @@ def generate_man_pages(
     doctree_temp_location_rel_to_sys_temp : str, optional
         Name of a temporary folder that will be used to create a path relative to the
         system temporary folder.
-    logger : LogSystem
+    logger : Logger | None, optional
         The logger.
     """
-    logger.info(shell_utils.get_cli_separator("-"), date=False)
+    logger.sub_section()
     logger.info("**Generating manual pages...**")
-    doctree_temp_location = os.path.join(
+    doctree_temp_location: str = os.path.join(
         get_system_tempdir(), doctree_temp_location_rel_to_sys_temp
     )
-    docs_sources_path = os.path.join(root_folder, docs_src_path_rel_to_root)
-    man_pages_destination_path = os.path.join(root_folder, docs_dest_path_rel_to_root)
+    docs_sources_path: str = os.path.join(root_folder, docs_src_path_rel_to_root)
+    man_pages_destination_path: str = os.path.join(root_folder, docs_dest_path_rel_to_root)
 
     sphinx_main(
         argv=[
