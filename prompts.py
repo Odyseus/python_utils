@@ -1,24 +1,31 @@
 # -*- coding: utf-8 -*-
 """CLI prompts and confirmation "dialogs" utilities.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 import sys
 import termios
 import tty
 
 from . import exceptions
-from .ansi_colors import Ansi
+from .ansi_colors import colorize
 
 
-def confirm(prompt=None, response=False):
+def confirm(prompt: str | None = None, response: bool = False) -> bool:
     """Prompts for yes or no response from the user.
 
     Parameters
     ----------
-    prompt : None, optional
+    prompt : str | None, optional
         The prompt text.
     response : bool, optional
         "response" should be set to the default value assumed by the caller when
-        user simply types ENTER.
+        user simply press ENTER.
 
     Returns
     -------
@@ -43,13 +50,13 @@ def confirm(prompt=None, response=False):
     Examples
     --------
 
-    >>> confirm(prompt='Create Directory?', response=True)
+    >>> confirm(prompt='Create Directory?', response=True)   # doctest: +SKIP
     Create Directory? [Y|n]:
     True
-    >>> confirm(prompt='Create Directory?', response=False)
+    >>> confirm(prompt='Create Directory?', response=False)  # doctest: +SKIP
     Create Directory? [N|y]:
     False
-    >>> confirm(prompt='Create Directory?', response=False)
+    >>> confirm(prompt='Create Directory?', response=False)  # doctest: +SKIP
     Create Directory? [N|y]: y
     True
     """
@@ -65,13 +72,13 @@ def confirm(prompt=None, response=False):
     try:
         while True:
             # Lower the input case just so I don't have to micro-manage the answer.
-            ans = input(Ansi.DEFAULT(prompt)).lower()
+            ans: str = input(colorize(prompt)).lower()
 
             if not ans:
                 return response
 
             if ans not in ["y", "n"]:
-                print(Ansi.LIGHT_YELLOW("**Please enter y or n.**"))
+                print(colorize("**Please enter y or n.**", "warning"))
                 continue
 
             if ans == "y":
@@ -83,7 +90,7 @@ def confirm(prompt=None, response=False):
         raise exceptions.KeyboardInterruption()
 
 
-def term_input(prompt):
+def term_input(prompt: str) -> str:
     """Get input from terminal.
 
     Parameters
@@ -108,7 +115,7 @@ def term_input(prompt):
     return input("")
 
 
-def nonempty(x):
+def nonempty(x: str) -> str:
     """Check for non empty.
 
     Parameters
@@ -140,7 +147,7 @@ def nonempty(x):
     return x
 
 
-def term_decode(text):
+def term_decode(text: str) -> str:
     """Decode terminal input.
 
     Parameters
@@ -164,9 +171,14 @@ def term_decode(text):
     if isinstance(text, str):
         return text
 
-    print(Ansi.LIGHT_YELLOW("* Note: non-ASCII characters entered "
-                            "and terminal encoding unknown -- assuming "
-                            "UTF-8 or Latin-1."))
+    print(
+        colorize(
+            "* Note: non-ASCII characters entered "
+            "and terminal encoding unknown -- assuming "
+            "UTF-8 or Latin-1.",
+            "warning",
+        )
+    )
 
     try:
         text = text.decode("utf-8")
@@ -176,7 +188,13 @@ def term_decode(text):
     return text
 
 
-def do_prompt(d, key, text, default=None, validator=nonempty):
+def do_prompt(
+    d: dict,
+    key: str,
+    text: str,
+    default: str | None = None,
+    validator: Callable[[str], str] = nonempty,
+):
     """Prompt function for interactively ask user for data.
 
     Parameters
@@ -187,9 +205,9 @@ def do_prompt(d, key, text, default=None, validator=nonempty):
         The "key" to change from "d".
     text : str
         The prompt text.
-    default : None, optional
+    default : str | None, optional
         Default option if none entered.
-    validator : function, optional
+    validator : Callable[[str], str], optional
         A function to validate the input if needed.
 
     Raises
@@ -206,14 +224,16 @@ def do_prompt(d, key, text, default=None, validator=nonempty):
     - Eradicated Python 2 specific code.
     """
     try:
+        prompt: str = ""
+
         while True:
             if default is not None:
                 prompt = "**> %s:\n> Default [**%s**]:** " % (text, default)
             else:
                 prompt = "**> %s:** " % text
 
-            prompt = Ansi.DEFAULT(prompt)
-            x = term_input(prompt).strip()
+            prompt = colorize(prompt)
+            x: str = term_input(prompt).strip()
 
             if default and not x:
                 x = default
@@ -223,7 +243,7 @@ def do_prompt(d, key, text, default=None, validator=nonempty):
             try:
                 x = validator(x)
             except exceptions.ValidationError as err:
-                print(Ansi.LIGHT_YELLOW("*** %s**" % str(err)))
+                print(colorize("*** %s**" % str(err), "warning"))
                 continue
             break
     except (KeyboardInterrupt, SystemExit):
@@ -232,7 +252,7 @@ def do_prompt(d, key, text, default=None, validator=nonempty):
         d[key] = x
 
 
-def read_char(txt):
+def read_char(txt: str) -> str:
     """Read character.
 
     Read single characters from standard input.
@@ -247,13 +267,13 @@ def read_char(txt):
     str
         The read character.
     """
-    print(Ansi.DEFAULT(txt))
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
+    print(colorize(txt))
+    fd: int = sys.stdin.fileno()
+    old_settings: list = termios.tcgetattr(fd)
 
     try:
         tty.setraw(sys.stdin.fileno())
-        ch = sys.stdin.read(1)
+        ch: str = sys.stdin.read(1)
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
