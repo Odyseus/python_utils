@@ -107,34 +107,34 @@ def validate(instance, schema,
     errors = sorted(v.iter_errors(instance_copy), key=lambda e: e.path)
 
     if errors:
-        logger.error("**%s**" % shell_utils.get_cli_header(error_header), date=False, to_file=False)
+        logger.header(error_header)
 
         for error in errors:
-            logger.info(shell_utils.get_cli_separator("-"), date=False)
+            logger.sub_section()
 
             abs_path = " > ".join([str(key) for key in list(error.absolute_path)])
 
             if bool(abs_path):
-                logger.info("**Index or property path:** %s" % str(abs_path), date=False)
+                logger.info("**Index or property path:** %s" % str(abs_path))
 
-            logger.info(error.message, date=False)
+            logger.info(error.message)
 
             if error.context:
                 for e in error.context:
-                    logger.info(e.message, date=False)
+                    logger.info(e.message)
 
             extra_info_keys = ["title", "description", "default"]
             error_schema = error.schema
 
             if any(key in error_schema for key in extra_info_keys):
-                logger.info("**Extra information**", date=False)
+                logger.info("**Extra information**")
 
                 for x in extra_info_keys:
                     if error_schema.get(x):
                         logger.info("**%s:** %s" %
-                                    (x.capitalize(), error_schema.get(x)), date=False)
+                                    (x.capitalize(), error_schema.get(x)))
 
-        logger.info(shell_utils.get_cli_separator("-"), date=False)
+        logger.sub_section()
 
         error_message = "\n".join(["%sTo continue, all errors must be fixed." %
                                    ("" if raise_error else "**SchemaValidationError:** "),
@@ -143,7 +143,7 @@ def validate(instance, schema,
         if raise_error:
             raise SchemaValidationError(error_message)
         else:
-            logger.error(error_message, date=False)
+            logger.error(error_message)
             return 1
 
     return 0
