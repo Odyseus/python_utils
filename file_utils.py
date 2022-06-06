@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 """Common utilities to perform file operations.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import logging_system
+
 import os
 
 from glob import glob
@@ -13,7 +20,7 @@ from stat import ST_MTIME
 from . import exceptions
 
 
-def expand_path(path):
+def expand_path(path: str) -> str:
     """Expand environment variables used in ``path``. See :any:`os.path.expandvars` and
     :any:`os.path.expanduser`.
 
@@ -31,7 +38,7 @@ def expand_path(path):
     return os.path.expandvars(os.path.expanduser(path))
 
 
-def is_real_dir(dir_path):
+def is_real_dir(dir_path: str) -> bool:
     """Directory is a real directory.
 
     Parameters
@@ -47,7 +54,7 @@ def is_real_dir(dir_path):
     return os.path.isdir(dir_path) and not os.path.islink(dir_path)
 
 
-def is_real_file(file_path):
+def is_real_file(file_path: str) -> bool:
     """File is a real file, not a symbolic link to a file.
 
     Parameters
@@ -63,7 +70,7 @@ def is_real_file(file_path):
     return os.path.isfile(file_path) and not os.path.islink(file_path)
 
 
-def is_exec(fpath):
+def is_exec(fpath: str) -> bool:
     """Check if file is executable.
 
     Parameters
@@ -79,7 +86,7 @@ def is_exec(fpath):
     return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
 
-def custom_copytree2(source, destination):
+def custom_copytree2(source: str, destination: str) -> None:
     """Custom copytree.
 
     Parameters
@@ -108,7 +115,7 @@ def custom_copytree2(source, destination):
             copy2(src, dst)
 
 
-def get_parent_dir(fpath, go_up=0):
+def get_parent_dir(fpath: str, go_up: int = 0) -> str:
     """Get parent directory.
 
     Parameters
@@ -123,7 +130,7 @@ def get_parent_dir(fpath, go_up=0):
     str
         The new path to a directory.
     """
-    dir_path = os.path.dirname(fpath)
+    dir_path: str = os.path.dirname(fpath)
 
     if go_up >= 1:
         for x in range(0, int(go_up)):
@@ -132,7 +139,7 @@ def get_parent_dir(fpath, go_up=0):
     return dir_path
 
 
-def recursive_glob(stem, file_pattern):
+def recursive_glob(stem: str, file_pattern: str) -> list[str]:
     """Recursively match files in a directory according to a pattern.
 
     Parameters
@@ -144,13 +151,13 @@ def recursive_glob(stem, file_pattern):
 
     Returns
     -------
-    matches_list : list
+    list[str]
         A list of file names in the directory that match the file pattern.
     """
     return glob(stem + "/**/" + file_pattern, recursive=True)
 
 
-def remove_surplus_files(folder, file_pattern, max_files_to_keep=20):
+def remove_surplus_files(folder: str, file_pattern: str, max_files_to_keep: int = 20) -> None:
     """Remove surplus files from folder.
 
     Parameters
@@ -162,16 +169,16 @@ def remove_surplus_files(folder, file_pattern, max_files_to_keep=20):
     max_files_to_keep : int, optional
         Maximum amount of files to keep inside the folder.
     """
-    all_files = sorted(recursive_glob(folder, file_pattern))
+    all_files: list[str] = sorted(recursive_glob(folder, file_pattern))
 
     if len(all_files) > max_files_to_keep:
-        files_to_delete = all_files[:len(all_files) - max_files_to_keep]
+        files_to_delete: list[str] = all_files[: len(all_files) - max_files_to_keep]
 
         for f in files_to_delete:
             os.remove(f)
 
 
-def newer(source, target):
+def newer(source: str, target: str) -> bool:
     """Check if "source" is newer than "target".
 
     Parameters
@@ -184,15 +191,15 @@ def newer(source, target):
     Returns
     -------
     bool
-        Return true if "source" exists and is more recently modified than "target", or if "source"
-        exists and "target" doesn't.  Return false if both exist and "target" is the same age or
-        younger than "source".
+        Return true if ``source`` exists and is more recently modified than ``target``, or if ``source``
+        exists and ``target`` doesn't.  Return false if both exist and ``target`` is the same age or
+        younger than ``source``.
 
 
     Raises
     ------
     Exception
-        Raise if "source" does not exist.
+        Raise if ``source`` does not exist.
     """
     if not os.path.exists(source):
         raise Exception("File <%s> does not exist!!!" % os.path.abspath(source))
@@ -210,8 +217,14 @@ def newer(source, target):
     return mtime1 > mtime2
 
 
-def custom_copy2(source, destination, logger=None, log_copied_file=False, relative_path="",
-                 overwrite=False):
+def custom_copy2(
+    source: str,
+    destination: str,
+    logger: logging_system.Logger = None,
+    log_copied_file: bool = False,
+    relative_path: str = "",
+    overwrite: bool = False,
+) -> None:
     """Custom copy function.
 
     This function is basically :any:`shutil.copy2`, but it uses the :any:`newer` function
@@ -223,7 +236,7 @@ def custom_copy2(source, destination, logger=None, log_copied_file=False, relati
         Source file path.
     destination : str
         Target file path.
-    logger : LogSystem
+    logger : logging_system.Logger, optional
         The logger.
     log_copied_file : bool, optional
         If True, log the relative destination path of the copied file.
@@ -234,7 +247,7 @@ def custom_copy2(source, destination, logger=None, log_copied_file=False, relati
     """
     try:
         if overwrite or newer(source, destination):
-            destination_parent = os.path.dirname(destination)
+            destination_parent: str = os.path.dirname(destination)
 
             if not is_real_dir(destination_parent):
                 os.makedirs(destination_parent)
@@ -242,23 +255,29 @@ def custom_copy2(source, destination, logger=None, log_copied_file=False, relati
             copy2(source, destination, follow_symlinks=False)
 
             if log_copied_file:
-                path_to_log = os.path.relpath(destination, relative_path) \
-                    if relative_path else destination
-                logger.info("**File copied:** %s" % path_to_log, date=False)
+                path_to_log: str = (
+                    os.path.relpath(destination, relative_path) if relative_path else destination
+                )
+                logger.info("**File copied:** %s" % path_to_log)
     except Exception as err:
-        logger.error(err)
+        logger.exception(err)
 
 
-def copy_create_symlink(source, destination, source_is_symlink=False,
-                        logger=None, follow_symlinks=False):
+def copy_create_symlink(
+    source: str,
+    destination: str,
+    source_is_symlink: bool = False,
+    logger: logging_system.Logger = None,
+    follow_symlinks: bool = False,
+) -> None:
     """Copy symlinks avoiding at all cost throwing errors.
 
-    This function is always triggered when "source" is a symlink. It will create the symlink only
+    This function is always triggered when ``source`` is a symlink. It will create the symlink only
     after the following three tasks has been performed:
 
-        1. If "destination" is a symlink, use :any:`os.unlink` to eradicate it.
-        2. If "destination" is a directory, eradicate it with :any:`shutil.rmtree`.
-        3. If "destination" is a file, eradicate it with :any:`os.remove`.
+        1. If ``destination`` is a symlink, use :any:`os.unlink` to eradicate it.
+        2. If ``destination`` is a directory, eradicate it with :any:`shutil.rmtree`.
+        3. If ``destination`` is a file, eradicate it with :any:`os.remove`.
 
     Parameters
     ----------
@@ -267,16 +286,16 @@ def copy_create_symlink(source, destination, source_is_symlink=False,
     destination : str
         Destination.
     source_is_symlink : bool, optional
-        If the source path is a symbolic link.
-    logger : LogSystem
+        If the ``source`` path is a symbolic link.
+    logger : logging_system.Logger, optional
         The logger.
     follow_symlinks : bool, optional
         Follow symlinks.
 
     Notes
     -----
-    This function is mostly needed when performing an "incremental" backup, since in a "compressed"
-    backup job, the "copy" is handled by tar, and in a "stacked" backup job the "destination" is
+    This function is mostly needed when performing an *incremental* backup, since in a *compressed*
+    backup job, the *copy* is handled by tar, and in a "stacked" backup job the ``destination`` is
     always empty.
     """
     try:
@@ -292,11 +311,20 @@ def copy_create_symlink(source, destination, source_is_symlink=False,
         os.symlink(os.readlink(source) if source_is_symlink else source, destination)
         copystat(source, destination, follow_symlinks=follow_symlinks)
     except Exception as err:
-        logger.error(err)
+        logger.exception(err)
 
 
-def custom_copytree(src, dst, symlinks=True, ignored_patterns=None, ignore_dangling_symlinks=True,
-                    logger=None, log_copied_file=False, relative_path="", overwrite=False):
+def custom_copytree(
+    src: str,
+    dst: str,
+    symlinks: bool = True,
+    ignored_patterns: list[str] | set[str] | None = None,
+    ignore_dangling_symlinks: bool = True,
+    logger: logging_system.Logger = None,
+    log_copied_file: bool = False,
+    relative_path: str = "",
+    overwrite: bool = False,
+) -> str:
     """Recursively copy a directory tree.
 
     This function is basically the same as :any:`shutil.copytree`, but with the following
@@ -305,7 +333,7 @@ def custom_copytree(src, dst, symlinks=True, ignored_patterns=None, ignore_dangl
     - It copies directories whether the destination directory exists or not.
     - It uses a custom function to copy symlinks (:any:`copy_create_symlink`), it not just uses \
     :any:`os.symlink` directly.
-    - Switched the *ignore* parameter (originally a method) into *ignored_patterns* (now a list \
+    - Switched the *ignore* parameter (originally a method) into ``ignored_patterns`` (now a list \
     of file patterns). Just for the kick of it, not really needed.
 
     Parameters
@@ -316,11 +344,11 @@ def custom_copytree(src, dst, symlinks=True, ignored_patterns=None, ignore_dangl
         Destination directory.
     symlinks : bool, optional
         Handle symlinks.
-    ignored_patterns : None, optional
+    ignored_patterns : list[str] | set[str] | None, optional
          A list of file name patterns to be ignored by the copy functions.
     ignore_dangling_symlinks : bool, optional
         Whether to ignore dangling symlinks.
-    logger : LogSystem
+    logger : logging_system.Logger, optional
         The logger.
     log_copied_file : bool, optional
         See :any:`custom_copy2` > log_copied_file parameter.
@@ -339,31 +367,29 @@ def custom_copytree(src, dst, symlinks=True, ignored_patterns=None, ignore_dangl
     exceptions.Error
         A list of errors after all items in a directory were processed.
     """
-    names = os.listdir(src)
+    names: list[str] = os.listdir(src)
+    ignored_names: list[str] | set[str] = []
+    errors: list[tuple[str, str, str]] = []
 
     try:
         if ignored_patterns is not None:
             ignored_names = ignore_patterns(*ignored_patterns)(src, names)
-        else:
-            ignored_names = set()
 
         if not os.path.exists(dst):
             os.makedirs(dst)
     except Exception as err:
-        logger.error(err)
-
-    errors = []
+        logger.exception(err)
 
     for name in names:
         if name in ignored_names:
             continue
 
-        srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
+        srcname: str = os.path.join(src, name)
+        dstname: str = os.path.join(dst, name)
 
         try:
             if os.path.islink(srcname):
-                linkto = os.readlink(srcname)
+                linkto: str = os.readlink(srcname)
 
                 if symlinks:
                     # os.symlink(linkto, dstname)
@@ -373,41 +399,58 @@ def custom_copytree(src, dst, symlinks=True, ignored_patterns=None, ignore_dangl
                     # useless errors thrown by the direct use of :any:`os.symlink`.
                     # I fixed this nuisance by simply getting rid of the destination.
                     # MOVING ON!!!
-                    copy_create_symlink(srcname, dstname, source_is_symlink=True,
-                                        logger=logger, follow_symlinks=not symlinks)
+                    copy_create_symlink(
+                        srcname,
+                        dstname,
+                        source_is_symlink=True,
+                        logger=logger,
+                        follow_symlinks=not symlinks,
+                    )
                 else:
                     # Ignore dangling symlink if the flag is on
                     if not os.path.exists(linkto) and ignore_dangling_symlinks:
                         continue
                     # Otherwise let the copy occurs. copy2 will raise an error
                     if os.path.isdir(srcname):
-                        custom_copytree(srcname, dstname,
-                                        symlinks=symlinks,
-                                        ignored_patterns=ignored_patterns,
-                                        logger=logger,
-                                        log_copied_file=log_copied_file,
-                                        relative_path=relative_path)
+                        custom_copytree(
+                            srcname,
+                            dstname,
+                            symlinks=symlinks,
+                            ignored_patterns=ignored_patterns,
+                            logger=logger,
+                            log_copied_file=log_copied_file,
+                            relative_path=relative_path,
+                        )
                     else:
-                        custom_copy2(srcname, dstname,
-                                     logger=logger,
-                                     log_copied_file=log_copied_file,
-                                     relative_path=relative_path,
-                                     overwrite=overwrite)
+                        custom_copy2(
+                            srcname,
+                            dstname,
+                            logger=logger,
+                            log_copied_file=log_copied_file,
+                            relative_path=relative_path,
+                            overwrite=overwrite,
+                        )
             elif os.path.isdir(srcname):
-                custom_copytree(srcname, dstname,
-                                symlinks=symlinks,
-                                ignored_patterns=ignored_patterns,
-                                logger=logger,
-                                log_copied_file=log_copied_file,
-                                relative_path=relative_path,
-                                overwrite=overwrite)
+                custom_copytree(
+                    srcname,
+                    dstname,
+                    symlinks=symlinks,
+                    ignored_patterns=ignored_patterns,
+                    logger=logger,
+                    log_copied_file=log_copied_file,
+                    relative_path=relative_path,
+                    overwrite=overwrite,
+                )
             else:
                 # Will raise a SpecialFileError for unsupported file types
-                custom_copy2(srcname, dstname,
-                             logger=logger,
-                             log_copied_file=log_copied_file,
-                             relative_path=relative_path,
-                             overwrite=overwrite)
+                custom_copy2(
+                    srcname,
+                    dstname,
+                    logger=logger,
+                    log_copied_file=log_copied_file,
+                    relative_path=relative_path,
+                    overwrite=overwrite,
+                )
         # Catch the Error from the recursive custom_copytree so that we can
         # continue with other files
         except exceptions.Error as err:
@@ -428,7 +471,7 @@ def custom_copytree(src, dst, symlinks=True, ignored_patterns=None, ignore_dangl
     return dst
 
 
-def get_folder_size(dir_path):
+def get_folder_size(dir_path: str) -> int:
     """Get folder size
 
     Parameters
@@ -445,7 +488,7 @@ def get_folder_size(dir_path):
     ----
     Based on: `Calculating a directory's size using Python? <https://stackoverflow.com/a/37367965>`__
     """
-    total = 0
+    total: int = 0
 
     for entry in os.scandir(dir_path):
         if entry.is_file() and not entry.is_symlink():
@@ -456,7 +499,7 @@ def get_folder_size(dir_path):
     return total
 
 
-def recursive_dirlist(root_dir):
+def recursive_dirlist(root_dir: str) -> list[str]:
     """Recusively get a list of all folder paths in a directory.
 
     Parameters
@@ -466,14 +509,14 @@ def recursive_dirlist(root_dir):
 
     Returns
     -------
-    list
+    list[str]
         List of all folder paths inside ``root_dir``.
 
     Todo
     ----
     Add some limiting mechanism to avoid scaning vast amounts of directories.
     """
-    subfolders = [f.path for f in os.scandir(root_dir) if f.is_dir()]
+    subfolders: list[str] = [f.path for f in os.scandir(root_dir) if f.is_dir()]
 
     for dir in subfolders:
         subfolders.extend(recursive_dirlist(dir))
