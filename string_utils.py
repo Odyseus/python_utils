@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 """Common utilities to perform string manipulation operations.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import logging_system
+    from collections.abc import Callable
+    from collections.abc import Generator
+    from typing import Any
+
 import fnmatch
 import os
 import re
@@ -20,18 +30,30 @@ class __DictClone(UserDict):
     non-defined variables out of the formatted string.
     """
 
-    def __missing__(self, key):
+    def __missing__(self, key: str) -> str:
+        """See :py:meth:`object.__missing__`.
+
+        Parameters
+        ----------
+        key : str
+            The missing key.
+
+        Returns
+        -------
+        str
+            A blank string.
+        """
         return ""
 
 
-def split_on_uppercase(string, keep_contiguous=True):
+def split_on_uppercase(string: str, keep_contiguous: bool = True) -> list:
     """Split string on uppercase.
 
     Parameters
     ----------
     string : str
         The string to split by its uppercase characters.
-    keep_contiguous : bool
+    keep_contiguous : bool, optional
         Option to indicate we want to keep contiguous uppercase characters together.
 
     Returns
@@ -41,19 +63,27 @@ def split_on_uppercase(string, keep_contiguous=True):
 
     Note
     ----
-    Based on: `Split a string at uppercase letters <https://stackoverflow.com/a/40382663>`__
+    Based on: `Split a string at uppercase letters <https://stackoverflow.com/a/40382663>`__.
+
+    Example
+    -------
+
+    >>> from python_utils.string_utils import split_on_uppercase
+    >>> split_on_uppercase("HelloWorld")
+    ['Hello', 'World']
     """
 
-    string_length = len(string)
-    is_lower_around = (lambda: string[i - 1].islower()  # noqa
-                       or string_length > (i + 1) and string[i + 1].islower())
+    string_length: int = len(string)
+    is_lower_around: Callable[[int], bool] = (
+        lambda i: string[i - 1].islower() or string_length > (i + 1) and string[i + 1].islower()
+    )
 
-    start = 0
-    parts = []
+    start: int = 0
+    parts: list = []
 
     for i in range(1, string_length):
-        if string[i].isupper() and (not keep_contiguous or is_lower_around()):
-            parts.append(string[start: i])
+        if string[i].isupper() and (not keep_contiguous or is_lower_around(i)):
+            parts.append(string[start:i])
             start = i
 
     parts.append(string[start:])
@@ -61,14 +91,14 @@ def split_on_uppercase(string, keep_contiguous=True):
     return parts
 
 
-def do_replacements(data, replacement_data):
+def do_replacements(data: str, replacement_data: list[tuple[Any, Any]]) -> str:
     """Do replacements.
 
     Parameters
     ----------
     data : str
         Data to modify.
-    replacement_data : list
+    replacement_data : list[tuple[Any, Any]]
         List of tuples containing (template, replacement) data.
 
     Returns
@@ -83,21 +113,26 @@ def do_replacements(data, replacement_data):
     return data
 
 
-def do_string_substitutions(dir_path, replacement_data,
-                            allowed_extensions=(".py", ".bash", ".js", ".json", ".xml"),
-                            handle_file_names=True,
-                            logger=None):
+def do_string_substitutions(
+    dir_path: str,
+    replacement_data: list[tuple[Any, Any]],
+    allowed_extensions: str | tuple[str, ...] = (".py", ".bash", ".js", ".json", ".xml"),
+    handle_file_names: bool = True,
+    logger: logging_system.Logger | None = None,
+) -> None:
     """Do substitutions.
 
     Parameters
     ----------
     dir_path : str
         Path to a directory where to perform string substitutions on.
-    replacement_data : list
+    replacement_data : list[tuple[Any, Any]]
         Data used to perform string substitutions.
-    allowed_extensions : tuple, optional
+    allowed_extensions : str | tuple[str, ...], optional
         A tuple of file extensions that are allowed to be modified.
-    logger : LogSystem
+    handle_file_names : bool, optional
+        Perform string substitutions on file names.
+    logger : logging_system.Logger | None, optional
         The logger.
     """
     logger.info("**Performing string substitutions...**")
@@ -108,7 +143,7 @@ def do_string_substitutions(dir_path, replacement_data,
             if not fname.endswith(allowed_extensions):
                 continue
 
-            file_path = os.path.join(root, fname)
+            file_path: str = os.path.join(root, fname)
 
             if os.path.islink(file_path):
                 continue
@@ -116,7 +151,7 @@ def do_string_substitutions(dir_path, replacement_data,
             with open(file_path, "r+", encoding="UTF-8") as file:
                 file_data = file.read()
                 file.seek(0)
-                new_file_data = do_replacements(file_data, replacement_data)
+                new_file_data: str = do_replacements(file_data, replacement_data)
 
                 if new_file_data != file_data:
                     file.write(new_file_data)
@@ -132,25 +167,32 @@ def do_string_substitutions(dir_path, replacement_data,
                     os.chmod(file_path, 0o755)
 
             if handle_file_names:
-                fname_renamed = do_replacements(fname, replacement_data)
+                fname_renamed: str = do_replacements(fname, replacement_data)
 
                 if fname != fname_renamed:
-                    os.rename(file_path, os.path.join(os.path.dirname(file_path), fname_renamed))
+                    os.rename(
+                        file_path,
+                        os.path.join(os.path.dirname(file_path), fname_renamed),
+                    )
 
         for dname in dirs:
-            dir_path = os.path.join(root, dname)
+            dir_path: str = os.path.join(root, dname)
 
             if os.path.islink(dir_path):
                 continue
 
             if handle_file_names:
-                dname_renamed = do_replacements(dname, replacement_data)
+                dname_renamed: str = do_replacements(dname, replacement_data)
 
                 if dname != dname_renamed:
                     os.rename(dir_path, os.path.join(os.path.dirname(dir_path), dname_renamed))
 
 
-def super_filter(names, inclusion_patterns=[], exclusion_patterns=[]):
+def super_filter(
+    names: list[str],
+    inclusion_patterns: list[str] = [],
+    exclusion_patterns: list[str] = [],
+) -> list[str]:
     """Super filter.
 
     Enhanced version of fnmatch.filter() that accepts multiple inclusion and exclusion patterns.
@@ -164,16 +206,16 @@ def super_filter(names, inclusion_patterns=[], exclusion_patterns=[]):
 
     Parameters
     ----------
-    names : list
+    names : list[str]
         A list of strings to filter.
-    inclusion_patterns : list, optional
+    inclusion_patterns : list[str], optional
         A list of patterns to keep in names.
-    exclusion_patterns : list, optional
+    exclusion_patterns : list[str], optional
         A list of patterns to exclude from names.
 
     Returns
     -------
-    list
+    list[str]
         A filtered list of strings.
 
     Note
@@ -186,21 +228,21 @@ def super_filter(names, inclusion_patterns=[], exclusion_patterns=[]):
     return list(set(included) - set(excluded))
 
 
-def multi_filter(names, patterns):
+def multi_filter(names: list[str], patterns: list[str]) -> Generator[str, None, None]:
     """Multi filter.
 
     Generator function which yields the names that match one or more of the patterns.
 
     Parameters
     ----------
-    names : list
+    names : list[str]
         A list of strings to filter.
-    patterns : list
+    patterns : list[str]
         A list of patterns to match in names.
 
     Yields
     ------
-    str
+    Generator[str, None, None]
         A name in names parameter that matches any of the patterns in patterns parameter.
     """
     for name in names:
@@ -208,7 +250,7 @@ def multi_filter(names, patterns):
             yield name
 
 
-def get_valid_filename(string, separator="_"):
+def get_valid_filename(string: str, separator: str = "_") -> str:
     """Get valid file name.
 
     Return the given string converted to a string that can be used for a clean
@@ -238,14 +280,15 @@ def get_valid_filename(string, separator="_"):
     Example
     -------
 
-    >>> get_valid_filename("john's portrait in 2004.jpg")
-    "johns_portrait_in_2004.jpg"
+    >>> from python_utils import string_utils
+    >>> string_utils.get_valid_filename("john's portrait in 2004.jpg")
+    'johns_portrait_in_2004.jpg'
     """
     string = re.sub(r"\s+", separator, str(string).strip())
     return re.sub(r"(?u)[^-\w.]", "", string)
 
 
-def slugify(string, allow_unicode=False):
+def slugify(string: str, allow_unicode: bool = False) -> str:
     """Slugify.
 
     - Convert to ASCII if ``allow_unicode`` is False.
@@ -273,8 +316,9 @@ def slugify(string, allow_unicode=False):
     Example
     -------
 
-    >>> slugify("john's portrait in 2004.jpg")
-    "johns-portrait-in-2004jpg"
+    >>> from python_utils import string_utils
+    >>> string_utils.slugify("john's portrait in 2004.jpg")
+    'johns-portrait-in-2004jpg'
     """
     string = str(string)
 
@@ -288,7 +332,7 @@ def slugify(string, allow_unicode=False):
     return re.sub(r"[-\s]+", "-", string)
 
 
-def substitute_variables(variables, value):
+def substitute_variables(variables: dict, value: Any) -> Any:
     """Substitute variables.
 
     This is a crude attempt to replicate the functionality of the function with the same name
@@ -299,14 +343,13 @@ def substitute_variables(variables, value):
     ----------
     variables : dict
         A dictionary containing variables as keys mapped to values to replace those variables.
-    value : str, list, dict
+    value : Any
         The str/list/dict containing the data where to perform substitutions.
+
 
     Returns
     -------
-    list
-    dict
-    str
+    Any
         The modified data.
 
     Note
