@@ -14,7 +14,7 @@ from smtplib import SMTP
 from smtplib import SMTPException
 
 from . import json_schema_utils
-from .ansi_colors import Ansi
+from .ansi_colors import colorize
 from .exceptions import ExceptionWhitoutTraceBack
 from .schemas.mail_system_schema import settings_schema
 
@@ -95,7 +95,7 @@ class MailSystem():
             import getpass
 
             sender_password = getpass.getpass(
-                prompt=Ansi.DEFAULT("**Enter Sender E-Mail Password:** "))
+                prompt=colorize("**Enter Sender E-Mail Password:** ", "default"))
 
         return sender_password
 
