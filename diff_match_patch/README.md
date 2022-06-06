@@ -6,15 +6,12 @@ Python module extracted from [Diff, Match and Patch Library](https://github.com/
 
 This is a mirror/fork of the [Diff, Match and Patch Library](http://code.google.com/p/google-diff-match-patch/) by Neil Fraser.
 
-
 ## Diff, Match and Patch Library
-
 
 [http://code.google.com/p/google-diff-match-patch/](http://code.google.com/p/google-diff-match-patch/)
 **Neil Fraser**
 
 Online demo: http://GerHobbelt.github.io/google-diff-match-patch/
-
 
 ## License and installing the software
 
