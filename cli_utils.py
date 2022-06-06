@@ -1,73 +1,79 @@
 # -*- coding: utf-8 -*-
 """Command line interface utilities.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ._vendor.cli_utils import CommandLineInterfaceSubClass
+
 import os
 import sys
 
 from . import exceptions
-from . import file_utils
-from . import log_system
-from . import shell_utils
+from . import logging_system
 from .docopt import docopt
 
 if sys.version_info < (3, 5):
     raise exceptions.WrongPythonVersion()
 
 
-class CommandLineInterfaceSuper():
+class CommandLineInterfaceSuper:
     """Command line interface super class.
 
     It handles the arguments parsed by the docopt module.
 
     Attributes
     ----------
-    logger : LogSystem
+    logger : logging_system.Logger | None
         The logger.
     """
-    _cli_header_blacklist = []
-    _print_log_blacklist = []
-    _inhibit_logger_list = []
 
-    def __init__(self, app_name, logs_storage_dir="UserData/logs"):
-        """Initialization.
+    _cli_header_blacklist: list[bool] = []
+    _print_log_blacklist: list[bool] = []
+    _inhibit_logger_list: list[bool] = []
+
+    def __init__(self, app_name: str, logs_storage_dir: str = "UserData/logs") -> None:
+        """See :py:meth:`object.__init__`.
 
         Parameters
         ----------
         app_name : str
             Application name.
-        logs_storage_dir : str
+        logs_storage_dir : str, optional
             Log files storage location.
         """
-        self._app_name = app_name
-        self.logger = None
+        self._app_name: str = app_name
+        self.logger: logging_system.Logger | None = None
 
         if not self._inhibit_logger_list or not any(self._inhibit_logger_list):
-            log_file = log_system.generate_log_path(storage_dir=logs_storage_dir,
-                                                    prefix="CLI")
-            file_utils.remove_surplus_files(logs_storage_dir, "CLI*")
-            self.logger = log_system.LogSystem(log_file, verbose=True)
+            self.logger = logging_system.Logger(
+                logger_name=app_name,
+                stream_handler_formatter_options={"format_str": "%(message)s"},
+                use_file_handler=logs_storage_dir,
+            )
 
         self._display_cli_header()
 
-    def _display_cli_header(self):
+    def _display_cli_header(self) -> None:
         """Display CLI header.
         """
         if self.logger and (not self._cli_header_blacklist or not any(self._cli_header_blacklist)):
-            self.logger.info("**%s**" % shell_utils.get_cli_header(self._app_name),
-                             date=False, to_file=False)
+            self.logger.header(self._app_name)
             print("")
 
-    def print_log_file(self):
+    def print_log_file(self) -> None:
         """Print the path to the log file used by the current logger.
         """
         if self.logger and (not self._print_log_blacklist or not any(self._print_log_blacklist)):
             print()
-            self.logger.info(shell_utils.get_cli_separator("-"), date=False, to_file=False)
-            self.logger.warning("**Log file location:**", date=False, to_file=False)
-            self.logger.warning("**%s**" % self.logger.get_log_file(), date=False, to_file=False)
-            self.logger.info(shell_utils.get_cli_separator("-"), date=False, to_file=False)
+            self.logger.sub_section()
+            self.logger.warning("**Log file location:**", to_file=False)
+            self.logger.warning("**%s**" % self.logger.get_log_file(), to_file=False)
+            self.logger.sub_section()
 
-    def run(self):
+    def run(self) -> None:
         """Execute the assigned action stored in self.action if any.
 
         Raises
@@ -77,7 +83,7 @@ class CommandLineInterfaceSuper():
         """
         raise exceptions.MethodNotImplemented("run")
 
-    def _system_executable_generation(self, **kwargs):
+    def _system_executable_generation(self, **kwargs) -> None:
         """See :any:`template_utils.system_executable_generation`
 
         Parameters
@@ -89,7 +95,7 @@ class CommandLineInterfaceSuper():
 
         template_utils.system_executable_generation(**kwargs)
 
-    def _display_manual_page(self, man_page_path):
+    def _display_manual_page(self, man_page_path: str) -> None:
         """Display manual page.
 
         Parameters
@@ -102,15 +108,21 @@ class CommandLineInterfaceSuper():
         run(["man", man_page_path])
 
 
-def run_cli(flag_file="", docopt_doc="", app_name="",
-            app_version="", app_status="", cli_class=None):
+def run_cli(
+    flag_file: str = "",
+    docopt_doc: str = "",
+    app_name: str = "",
+    app_version: str = "",
+    app_status: str = "",
+    cli_class: type[CommandLineInterfaceSubClass] | None = None,
+):
     """Initialize main command line interface.
 
     Parameters
     ----------
-    flag_file : str
+    flag_file : str, optional
         The name of a "flag" file.
-    docopt_doc : str
+    docopt_doc : str, optional
         docopt docstring.
     app_name : str, optional
         Application name.
@@ -118,8 +130,8 @@ def run_cli(flag_file="", docopt_doc="", app_name="",
         Application version.
     app_status : str, optional
         Application status.
-    cli_class : cli_utils.CommandLineInterfaceSuper
-        An instance of ``cli_utils.CommandLineInterfaceSuper``.
+    cli_class : type[CommandLineInterfaceSubClass] | None, optional
+        An sub-class of ``cli_utils.CommandLineInterfaceSuper``.
 
     Raises
     ------
@@ -130,12 +142,13 @@ def run_cli(flag_file="", docopt_doc="", app_name="",
     if not os.path.exists(flag_file):
         raise exceptions.BadExecutionLocation()
 
-    arguments = docopt(docopt_doc, version="%s %s%s" %
-                       (app_name,
-                        app_version,
-                        " (%s)" % app_status if app_status else ""))
-    cli = cli_class(arguments)
-    cli.run()
+    if cli_class is not None:
+        arguments: dict = docopt(
+            docopt_doc,
+            version="%s %s%s" % (app_name, app_version, " (%s)" % app_status if app_status else ""),
+        )
+        cli: CommandLineInterfaceSubClass = cli_class(arguments)
+        cli.run()
 
 
 if __name__ == "__main__":
