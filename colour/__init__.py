@@ -1,267 +1,196 @@
 # -*- coding: utf-8 -*-
-"""Color Library (https://github.com/vaab/colour)
+"""Color Library (https://github.com/vaab/colour).
 
-.. :doctest:
+This module defines several color formats that can be converted to one or another.
 
-This module defines several color formats that can be converted to one or
-another.
+.. note::
 
-Formats
--------
+    **Differences with upstream**
 
-HSL:
-    3-uple of Hue, Saturation, Lightness all between 0.0 and 1.0
+    - Removed runtime creation of the color names to RGB maps.
 
-RGB:
-    3-uple of Red, Green, Blue all between 0.0 and 1.0
+**Formats**
 
-HEX:
-    string object beginning with '#' and with red, green, blue value.
-    This format accept color in 3 or 6 value ex: '#fff' or '#ffffff'
+- `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__: A 3-tuple of Hue, Saturation, \
+Lightness all between 0.0 and 1.0.
+- `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__: A 3-tuple of Red, Green, \
+Blue all between 0.0 and 1.0.
+- `HEX <https://en.wikipedia.org/wiki/Web_colors>`__: A string object beginning with '#' and with \
+red, green, blue value. This format accept color in 3 or 6 value ex: ``#fff`` or ``#ffffff``.
+- `WEB <https://en.wikipedia.org/wiki/Web_colors>`__: A string object that defaults to \
+`HEX <https://en.wikipedia.org/wiki/Web_colors>`__ representation or human if possible.
 
-WEB:
-    string object that defaults to HEX representation or human if possible
+**Usage**
 
-Usage
------
-
-Several function exists to convert from one format to another. But all
-function are not written. So the best way is to use the object Color.
+Several functions exist to convert from one format to another. But all functions are not written. \
+So the best way is to use the object Color.
 
 Please see the documentation of this object for more information.
 
-.. note:: Some constants are defined for convenience in HSL, RGB, HEX
+.. note::
+
+    Some constants are defined for convenience in :py:attr:`HSL`, :py:attr:`RGB`, :py:attr:`HEX`.
+
+Attributes
+----------
+HEX
+    `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ colors container.
+HSL
+    `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ colors container.
+RGB
+    `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ colors container.
 
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .._vendor.colour import InputColor3Tuple
+    from .._vendor.colour import OutputColor3Tuple
+
 import hashlib
-import re
 
+from collections.abc import Callable
 
-##
-# Some Constants
-##
+from .color_maps import RGB_TO_WEB_COLOR_NAMES
+from .color_maps import WEB_COLOR_NAME_TO_RGB
 
-# Soften inequalities and some rounding issue based on float
-FLOAT_ERROR = 0.0000005
+from .constants import FLOAT_ERROR
+from .constants import LONG_HEX_COLOR
+from .constants import SHORT_HEX_COLOR
 
-
-RGB_TO_COLOR_NAMES = {
-    (0, 0, 0): ["black"],
-    (0, 0, 128): ["navy", "navyblue"],
-    (0, 0, 139): ["darkblue"],
-    (0, 0, 205): ["mediumblue"],
-    (0, 0, 255): ["blue"],
-    (0, 100, 0): ["darkgreen"],
-    (0, 128, 0): ["green"],
-    (0, 128, 128): ["teal"],
-    (0, 139, 139): ["darkcyan"],
-    (0, 191, 255): ["deepskyblue"],
-    (0, 206, 209): ["darkturquoise"],
-    (0, 250, 154): ["mediumspringgreen"],
-    (0, 255, 0): ["lime"],
-    (0, 255, 127): ["springgreen"],
-    (0, 255, 255): ["aqua", "cyan"],
-    (100, 149, 237): ["cornflowerblue"],
-    (102, 205, 170): ["mediumaquamarine"],
-    (102, 51, 153): ["rebeccapurple"],
-    (105, 105, 105): ["dimgray", "dimgrey"],
-    (106, 90, 205): ["slateblue"],
-    (107, 142, 35): ["olivedrab"],
-    (112, 128, 144): ["slategray", "slategrey"],
-    (119, 136, 153): ["lightslategray", "lightslategrey"],
-    (123, 104, 238): ["mediumslateblue"],
-    (124, 252, 0): ["lawngreen"],
-    (127, 255, 0): ["chartreuse"],
-    (127, 255, 212): ["aquamarine"],
-    (128, 0, 0): ["maroon"],
-    (128, 0, 128): ["purple"],
-    (128, 128, 0): ["olive"],
-    (128, 128, 128): ["gray", "grey"],
-    (132, 112, 255): ["lightslateblue"],
-    (135, 206, 235): ["skyblue"],
-    (135, 206, 250): ["lightskyblue"],
-    (138, 43, 226): ["blueviolet"],
-    (139, 0, 0): ["darkred"],
-    (139, 0, 139): ["darkmagenta"],
-    (139, 69, 19): ["saddlebrown"],
-    (143, 188, 143): ["darkseagreen"],
-    (144, 238, 144): ["lightgreen"],
-    (147, 112, 219): ["mediumpurple"],
-    (148, 0, 211): ["darkviolet"],
-    (152, 251, 152): ["palegreen"],
-    (153, 50, 204): ["darkorchid"],
-    (154, 205, 50): ["yellowgreen"],
-    (160, 82, 45): ["sienna"],
-    (165, 42, 42): ["brown"],
-    (169, 169, 169): ["darkgray", "darkgrey"],
-    (173, 216, 230): ["lightblue"],
-    (173, 255, 47): ["greenyellow"],
-    (175, 238, 238): ["paleturquoise"],
-    (176, 196, 222): ["lightsteelblue"],
-    (176, 224, 230): ["powderblue"],
-    (178, 34, 34): ["firebrick"],
-    (184, 134, 11): ["darkgoldenrod"],
-    (186, 85, 211): ["mediumorchid"],
-    (188, 143, 143): ["rosybrown"],
-    (189, 183, 107): ["darkkhaki"],
-    (192, 192, 192): ["silver"],
-    (199, 21, 133): ["mediumvioletred"],
-    (205, 133, 63): ["peru"],
-    (205, 92, 92): ["indianred"],
-    (208, 32, 144): ["violetred"],
-    (210, 105, 30): ["chocolate"],
-    (210, 180, 140): ["tan"],
-    (211, 211, 211): ["lightgray", "lightgrey"],
-    (216, 191, 216): ["thistle"],
-    (218, 112, 214): ["orchid"],
-    (218, 165, 32): ["goldenrod"],
-    (219, 112, 147): ["palevioletred"],
-    (220, 20, 60): ["crimson"],
-    (220, 220, 220): ["gainsboro"],
-    (221, 160, 221): ["plum"],
-    (222, 184, 135): ["burlywood"],
-    (224, 255, 255): ["lightcyan"],
-    (230, 230, 250): ["lavender"],
-    (233, 150, 122): ["darksalmon"],
-    (238, 130, 238): ["violet"],
-    (238, 221, 130): ["lightgoldenrod"],
-    (238, 232, 170): ["palegoldenrod"],
-    (240, 128, 128): ["lightcoral"],
-    (240, 230, 140): ["khaki"],
-    (240, 248, 255): ["aliceblue"],
-    (240, 255, 240): ["honeydew"],
-    (240, 255, 255): ["azure"],
-    (244, 164, 96): ["sandybrown"],
-    (245, 222, 179): ["wheat"],
-    (245, 245, 220): ["beige"],
-    (245, 245, 245): ["whitesmoke"],
-    (245, 255, 250): ["mintcream"],
-    (248, 248, 255): ["ghostwhite"],
-    (25, 25, 112): ["midnightblue"],
-    (250, 128, 114): ["salmon"],
-    (250, 235, 215): ["antiquewhite"],
-    (250, 240, 230): ["linen"],
-    (250, 250, 210): ["lightgoldenrodyellow"],
-    (253, 245, 230): ["oldlace"],
-    (255, 0, 0): ["red"],
-    (255, 0, 255): ["fuchsia", "magenta"],
-    (255, 105, 180): ["hotpink"],
-    (255, 127, 80): ["coral"],
-    (255, 140, 0): ["darkorange"],
-    (255, 160, 122): ["lightsalmon"],
-    (255, 165, 0): ["orange"],
-    (255, 182, 193): ["lightpink"],
-    (255, 192, 203): ["pink"],
-    (255, 20, 147): ["deeppink"],
-    (255, 215, 0): ["gold"],
-    (255, 218, 185): ["peachpuff"],
-    (255, 222, 173): ["navajowhite"],
-    (255, 228, 181): ["moccasin"],
-    (255, 228, 196): ["bisque"],
-    (255, 228, 225): ["mistyrose"],
-    (255, 235, 205): ["blanchedalmond"],
-    (255, 239, 213): ["papayawhip"],
-    (255, 240, 245): ["lavenderblush"],
-    (255, 245, 238): ["seashell"],
-    (255, 248, 220): ["cornsilk"],
-    (255, 250, 205): ["lemonchiffon"],
-    (255, 250, 240): ["floralwhite"],
-    (255, 250, 250): ["snow"],
-    (255, 255, 0): ["yellow"],
-    (255, 255, 224): ["lightyellow"],
-    (255, 255, 240): ["ivory"],
-    (255, 255, 255): ["white"],
-    (255, 69, 0): ["orangered"],
-    (255, 99, 71): ["tomato"],
-    (30, 144, 255): ["dodgerblue"],
-    (32, 178, 170): ["lightseagreen"],
-    (34, 139, 34): ["forestgreen"],
-    (46, 139, 87): ["seagreen"],
-    (47, 79, 79): ["darkslategray", "darkslategrey"],
-    (50, 205, 50): ["limegreen"],
-    (60, 179, 113): ["mediumseagreen"],
-    (64, 224, 208): ["turquoise"],
-    (65, 105, 225): ["royalblue"],
-    (70, 130, 180): ["steelblue"],
-    (72, 209, 204): ["mediumturquoise"],
-    (72, 61, 139): ["darkslateblue"],
-    (75, 0, 130): ["indigo"],
-    (85, 107, 47): ["darkolivegreen"],
-    (95, 158, 160): ["cadetblue"],
-}
-
-
-# Building inverse relation
-COLOR_NAME_TO_RGB = dict(
-    (name.lower(), rgb) for rgb, names in RGB_TO_COLOR_NAMES.items() for name in names
-)
-
-
-LONG_HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
-SHORT_HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{3}$")
+from .utils import color_scale
+from .utils import hash_or_str
+from .utils import hue2rgb
+from .utils import sanitize_color_name
 
 
 class C_HSL:
+    """`HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ colors container.
+
+    Examples
+    --------
+
+    >>> from python_utils.colour import HSL
+
+    >>> HSL.WHITE
+    (0.0, 0.0, 1.0)
+    >>> HSL.BLUE
+    (0.6666666666666666, 1.0, 0.5)
+
+    >>> HSL.DONOTEXISTS
+    Traceback (most recent call last):
+    ...
+    AttributeError: ... has no attribute 'DONOTEXISTS'
+
+    """
+
     def __getattr__(self, value):
-        label = value.lower()
-        if label in COLOR_NAME_TO_RGB:
-            return rgb2hsl(tuple(v / 255.0 for v in COLOR_NAME_TO_RGB[label]))
-        raise AttributeError(
-            "%s instance has no attribute %r" % (self.__class__, value)
-        )
+        """See :py:meth:`object.__getattr__`.
 
+        Parameters
+        ----------
+        value : str
+            A color name.
 
-HSL = C_HSL()
+        Returns
+        -------
+        OutputColor3Tuple
+            `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ representation of color name.
+
+        Raises
+        ------
+        AttributeError
+            Color name not on colors database.
+        """
+        label = sanitize_color_name(value)
+
+        if label in WEB_COLOR_NAME_TO_RGB:
+            return rgb2hsl(tuple(v / 255.0 for v in WEB_COLOR_NAME_TO_RGB[label]))
+
+        raise AttributeError("%s instance has no attribute %r" % (self.__class__, value))
 
 
 class C_RGB:
-    """RGB colors container
+    """`RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ colors container.
 
     Provides a quick color access.
 
-    >>> from colour import RGB
+    Examples
+    --------
+
+    >>> from python_utils.colour import RGB
 
     >>> RGB.WHITE
     (1.0, 1.0, 1.0)
     >>> RGB.BLUE
     (0.0, 0.0, 1.0)
 
-    >>> RGB.DONOTEXISTS  # doctest: +ELLIPSIS
+    >>> RGB.DONOTEXISTS
     Traceback (most recent call last):
     ...
     AttributeError: ... has no attribute 'DONOTEXISTS'
 
     """
 
-    def __getattr__(self, value):
+    def __getattr__(self, value: str) -> OutputColor3Tuple:
+        """See :py:meth:`object.__getattr__`.
+
+        Parameters
+        ----------
+        value : str
+            A color name.
+
+        Returns
+        -------
+        OutputColor3Tuple
+            `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ representation of color name.
+        """
         return hsl2rgb(getattr(HSL, value))
 
 
 class C_HEX:
-    """RGB colors container
+    """`HEX <https://en.wikipedia.org/wiki/Web_colors>`__ colors container.
 
     Provides a quick color access.
 
-    >>> from colour import HEX
+    Examples
+    --------
+
+    >>> from python_utils.colour import HEX
 
     >>> HEX.WHITE
     '#fff'
     >>> HEX.BLUE
     '#00f'
 
-    >>> HEX.DONOTEXISTS  # doctest: +ELLIPSIS
+    >>> HEX.DONOTEXISTS
     Traceback (most recent call last):
     ...
     AttributeError: ... has no attribute 'DONOTEXISTS'
 
     """
 
-    def __getattr__(self, value):
+    def __getattr__(self, value: str) -> str:
+        """See :py:meth:`object.__getattr__`.
+
+        Parameters
+        ----------
+        value : str
+            A color name.
+
+        Returns
+        -------
+        str
+            `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ representation of color name.
+        """
         return rgb2hex(getattr(RGB, value))
 
 
-RGB = C_RGB()
-HEX = C_HEX()
+HSL: C_HSL = C_HSL()
+RGB: C_RGB = C_RGB()
+HEX: C_HEX = C_HEX()
 
 
 ##
@@ -269,29 +198,47 @@ HEX = C_HEX()
 ##
 
 
-def hsl2rgb(hsl):
-    """Convert HSL representation towards RGB
+def hsl2rgb(hsl: InputColor3Tuple) -> OutputColor3Tuple:
+    """Convert `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__
+    representation towards `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__.
 
-    :param h: Hue, position around the chromatic circle (h=1 equiv h=0)
-    :param s: Saturation, color saturation (0=full gray, 1=full color)
-    :param l: Ligthness, Overhaul lightness (0=full black, 1=full white)
-    :rtype: 3-uple for RGB values in float between 0 and 1
-
-    Hue, Saturation, Range from Lightness is a float between 0 and 1
+    Hue, Saturation, Range from Lightness is a float between 0 and 1.
 
     Note that Hue can be set to any value but as it is a rotation
     around the chromatic circle, any value above 1 or below 0 can
     be expressed by a value between 0 and 1 (Note that h=0 is equiv
     to h=1).
 
-    This algorithm came from:
-    http://www.easyrgb.com/index.php?X=MATH&H=19#text19
+    This algorithm came from `EasyRGB <http://www.easyrgb.com/index.php?X=MATH&H=19#text19>`__
 
-    Here are some quick notion of HSL to RGB conversion:
+    Parameters
+    ----------
+    hsl : InputColor3Tuple
+        Hue, position around the chromatic circle (h=1 equiv h=0).
+        Saturation, color saturation (0=full gray, 1=full color).
+        Lightness, Overhaul lightness (0=full black, 1=full white).
 
-    >>> from colour import hsl2rgb
+    Returns
+    -------
+    OutputColor3Tuple
+        A 3-tuple for `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ values
+        in float between 0 and 1.
 
-    With a lightness put at 0, RGB is always rgbblack
+    Raises
+    ------
+    ValueError
+        Lightness/Saturation out of range. Must be between 0 and 1.
+
+    Examples
+    --------
+
+    Here are some quick notion of `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__
+    to `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ conversion
+
+    >>> from python_utils.colour import hsl2rgb
+
+    With a lightness put at 0, `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__
+    is always rgbblack
 
     >>> hsl2rgb((0.0, 0.0, 0.0))
     (0.0, 0.0, 0.0)
@@ -300,7 +247,8 @@ def hsl2rgb(hsl):
     >>> hsl2rgb((0.5, 0.5, 0.0))
     (0.0, 0.0, 0.0)
 
-    Same for lightness put at 1, RGB is always rgbwhite
+    Same for lightness put at 1, `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__
+    is always rgbwhite
 
     >>> hsl2rgb((0.0, 0.0, 1.0))
     (1.0, 1.0, 1.0)
@@ -309,7 +257,8 @@ def hsl2rgb(hsl):
     >>> hsl2rgb((0.5, 0.5, 1.0))
     (1.0, 1.0, 1.0)
 
-    With saturation put at 0, the RGB should be equal to Lightness:
+    With saturation put at 0, the `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__
+    should be equal to Lightness:
 
     >>> hsl2rgb((0.0, 0.0, 0.25))
     (0.25, 0.25, 0.25)
@@ -330,14 +279,16 @@ def hsl2rgb(hsl):
     >>> hsl2rgb((2.0/3 , 1.0, 0.5))
     (0.0, 0.0, 1.0)
 
-    Of course:
-    >>> hsl2rgb((0.0, 2.0, 0.5))  # doctest: +ELLIPSIS
+    Of course
+
+    >>> hsl2rgb((0.0, 2.0, 0.5))
     Traceback (most recent call last):
     ...
     ValueError: Saturation must be between 0 and 1.
 
-    And:
-    >>> hsl2rgb((0.0, 0.0, 1.5))  # doctest: +ELLIPSIS
+    And
+
+    >>> hsl2rgb((0.0, 0.0, 1.5))
     Traceback (most recent call last):
     ...
     ValueError: Lightness must be between 0 and 1.
@@ -360,54 +311,70 @@ def hsl2rgb(hsl):
 
     v1 = 2.0 * l - v2
 
-    r = _hue2rgb(v1, v2, h + (1.0 / 3))
-    g = _hue2rgb(v1, v2, h)
-    b = _hue2rgb(v1, v2, h - (1.0 / 3))
+    r = hue2rgb(v1, v2, h + (1.0 / 3))
+    g = hue2rgb(v1, v2, h)
+    b = hue2rgb(v1, v2, h - (1.0 / 3))
 
     return r, g, b
 
 
-def rgb2hsl(rgb):
-    """Convert RGB representation towards HSL
+def rgb2hsl(rgb: InputColor3Tuple) -> OutputColor3Tuple:
+    """Convert `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ representation towards
+    `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__.
 
-    :param r: Red amount (float between 0 and 1)
-    :param g: Green amount (float between 0 and 1)
-    :param b: Blue amount (float between 0 and 1)
-    :rtype: 3-uple for HSL values in float between 0 and 1
+    This algorithm came from `EasyRGB <http://www.easyrgb.com/index.php?X=MATH&H=19#text19>`__.
 
-    This algorithm came from:
-    http://www.easyrgb.com/index.php?X=MATH&H=19#text19
+    Parameters
+    ----------
+    rgb : InputColor3Tuple
+        Red amount (float between 0 and 1).
+        Green amount (float between 0 and 1).
+        Blue amount (float between 0 and 1).
 
-    Here are some quick notion of RGB to HSL conversion:
+    Returns
+    -------
+    OutputColor3Tuple
+        3-tuple for `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ values in float between 0 and 1.
 
-    >>> from colour import rgb2hsl
+    Raises
+    ------
+    ValueError
+        Red/Green/Blue out of range. Must be between 0 and 1.
+
+    Examples
+    --------
+
+    Here are some quick notion of `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__
+    to `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ conversion.
+
+    >>> from python_utils.colour import rgb2hsl
 
     Note that if red amount is equal to green and blue, then you
     should have a gray value (from black to white).
 
-
-    >>> rgb2hsl((1.0, 1.0, 1.0))  # doctest: +ELLIPSIS
+    >>> rgb2hsl((1.0, 1.0, 1.0))
     (..., 0.0, 1.0)
-    >>> rgb2hsl((0.5, 0.5, 0.5))  # doctest: +ELLIPSIS
+    >>> rgb2hsl((0.5, 0.5, 0.5))
     (..., 0.0, 0.5)
-    >>> rgb2hsl((0.0, 0.0, 0.0))  # doctest: +ELLIPSIS
+    >>> rgb2hsl((0.0, 0.0, 0.0))
     (..., 0.0, 0.0)
 
     If only one color is different from the others, it defines the
-    direct Hue:
 
-    >>> rgb2hsl((0.5, 0.5, 1.0))  # doctest: +ELLIPSIS
+    direct Hue
+
+    >>> rgb2hsl((0.5, 0.5, 1.0))
     (0.66..., 1.0, 0.75)
-    >>> rgb2hsl((0.2, 0.1, 0.1))  # doctest: +ELLIPSIS
+    >>> rgb2hsl((0.2, 0.1, 0.1))
     (0.0, 0.33..., 0.15...)
 
     Having only one value set, you can check that:
 
     >>> rgb2hsl((1.0, 0.0, 0.0))
     (0.0, 1.0, 0.5)
-    >>> rgb2hsl((0.0, 1.0, 0.0))  # doctest: +ELLIPSIS
+    >>> rgb2hsl((0.0, 1.0, 0.0))
     (0.33..., 1.0, 0.5)
-    >>> rgb2hsl((0.0, 0.0, 1.0))  # doctest: +ELLIPSIS
+    >>> rgb2hsl((0.0, 0.0, 1.0))
     (0.66..., 1.0, 0.5)
 
     Regression check upon very close values in every component of
@@ -416,15 +383,16 @@ def rgb2hsl(rgb):
     >>> rgb2hsl((0.9999999999999999, 1.0, 0.9999999999999994))
     (0.0, 0.0, 0.999...)
 
-    Of course:
+    Of course
 
-    >>> rgb2hsl((0.0, 2.0, 0.5))  # doctest: +ELLIPSIS
+    >>> rgb2hsl((0.0, 2.0, 0.5))
     Traceback (most recent call last):
     ...
     ValueError: Green must be between 0 and 1. You provided 2.0.
 
-    And:
-    >>> rgb2hsl((0.0, 0.0, 1.5))  # doctest: +ELLIPSIS
+    And
+
+    >>> rgb2hsl((0.0, 0.0, 1.5))
     Traceback (most recent call last):
     ...
     ValueError: Blue must be between 0 and 1. You provided 1.5.
@@ -476,39 +444,29 @@ def rgb2hsl(rgb):
     return (h, s, l)
 
 
-def _hue2rgb(v1, v2, vH):
-    """Private helper function (Do not call directly)
+def rgb2hex(
+    rgb: InputColor3Tuple,
+    force_long: bool = False,
+) -> str:
+    """Transform `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__
+    tuple to hex `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ representation
 
-    :param vH: rotation around the chromatic circle (between 0..1)
+    Parameters
+    ----------
+    rgb : InputColor3Tuple
+        `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ 3-tuple of floats between 0 and 1.
+    force_long : bool, optional
+        Force 6 digits representation of `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ color.
 
-    """
+    Returns
+    -------
+    str
+        A 3 hexadecimal characters or 6 hexadecimal characters string representation.
 
-    while vH < 0:
-        vH += 1
-    while vH > 1:
-        vH -= 1
+    Examples
+    --------
 
-    if 6 * vH < 1:
-        return v1 + (v2 - v1) * 6 * vH
-    if 2 * vH < 1:
-        return v2
-    if 3 * vH < 2:
-        return v1 + (v2 - v1) * ((2.0 / 3) - vH) * 6
-
-    return v1
-
-
-def rgb2hex(rgb, force_long=False):
-    """Transform RGB tuple to hex RGB representation
-
-    :param rgb: RGB 3-uple of float between 0 and 1
-    :rtype: 3 hex char or 6 hex char string representation
-
-    Usage
-    -----
-
-    >>> from colour import rgb2hex
-
+    >>> from python_utils.colour import rgb2hex
     >>> rgb2hex((0.0,1.0,0.0))
     '#0f0'
 
@@ -535,13 +493,29 @@ def rgb2hex(rgb, force_long=False):
     return "#%s" % hx
 
 
-def hex2rgb(str_rgb):
-    """Transform hex RGB representation to RGB tuple
+def hex2rgb(str_rgb: str) -> OutputColor3Tuple:
+    """Transform hex `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__
+    representation to `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ tuple.
 
-    :param str_rgb: 3 hex char or 6 hex char string representation
-    :rtype: RGB 3-uple of float between 0 and 1
+    Parameters
+    ----------
+    str_rgb : str
+        A 3 hexadecimal characters or 6 hexadecimal characters string representation.
 
-    >>> from colour import hex2rgb
+    Returns
+    -------
+    OutputColor3Tuple
+        `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ 3-tuple of floats between 0 and 1.
+
+    Raises
+    ------
+    ValueError
+        Invalid `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ representation of color.
+
+    Examples
+    --------
+
+    >>> from python_utils.colour import hex2rgb
 
     >>> hex2rgb('#00ff00')
     (0.0, 1.0, 0.0)
@@ -549,10 +523,10 @@ def hex2rgb(str_rgb):
     >>> hex2rgb('#0f0')
     (0.0, 1.0, 0.0)
 
-    >>> hex2rgb('#aaa')  # doctest: +ELLIPSIS
+    >>> hex2rgb('#aaa')
     (0.66..., 0.66..., 0.66...)
 
-    >>> hex2rgb('#aa')  # doctest: +ELLIPSIS
+    >>> hex2rgb('#aa')
     Traceback (most recent call last):
     ...
     ValueError: Invalid value '#aa' provided for rgb color.
@@ -574,19 +548,28 @@ def hex2rgb(str_rgb):
     return tuple([float(int(v, 16)) / 255 for v in (r, g, b)])
 
 
-def hex2web(hex):
-    """Converts HEX representation to WEB
+def hex2web(hex: str) -> str:
+    """Converts `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ representation
+    to `WEB <https://en.wikipedia.org/wiki/Web_colors>`__.
 
-    :param rgb: 3 hex char or 6 hex char string representation
-    :rtype: web string representation (human readable if possible)
+    `WEB <https://en.wikipedia.org/wiki/Web_colors>`__ representation uses X11 rgb.txt to
+    define conversion between `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__
+    and English color names.
 
-    WEB representation uses X11 rgb.txt to define conversion
-    between RGB and english color names.
+    Parameters
+    ----------
+    hex : str
+        A 3 hexadecimal characters or 6 hexadecimal characters string representation
 
-    Usage
-    =====
+    Returns
+    -------
+    str
+        Web string representation (human readable if possible).
 
-    >>> from colour import hex2web
+    Examples
+    --------
+
+    >>> from python_utils.colour import hex2web
 
     >>> hex2web('#ff0000')
     'red'
@@ -602,15 +585,8 @@ def hex2web(hex):
 
     """
     dec_rgb = tuple(int(v * 255) for v in hex2rgb(hex))
-    if dec_rgb in RGB_TO_COLOR_NAMES:
-        # take the first one
-        color_name = RGB_TO_COLOR_NAMES[dec_rgb][0]
-        # Enforce full lowercase for single worded color name.
-        return (
-            color_name
-            if len(re.sub(r"[^A-Z]", "", color_name)) > 1
-            else color_name.lower()
-        )
+    if dec_rgb in RGB_TO_WEB_COLOR_NAMES:
+        return RGB_TO_WEB_COLOR_NAMES[dec_rgb][0]
 
     # Hex format is verified by hex2rgb function. And should be 3 or 6 digit
     if len(hex) == 7:
@@ -619,19 +595,37 @@ def hex2web(hex):
     return hex
 
 
-def web2hex(web, force_long=False):
-    """Converts WEB representation to HEX
+def web2hex(web: str, force_long: bool = False) -> str:
+    """Converts `WEB <https://en.wikipedia.org/wiki/Web_colors>`__ representation to
+    `HEX <https://en.wikipedia.org/wiki/Web_colors>`__
 
-    :param rgb: web string representation (human readable if possible)
-    :rtype: 3 hex char or 6 hex char string representation
+    `WEB <https://en.wikipedia.org/wiki/Web_colors>`__ representation uses X11 rgb.txt to
+    define conversion between `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__
+    and English color names.
 
-    WEB representation uses X11 rgb.txt to define conversion
-    between RGB and english color names.
+    Parameters
+    ----------
+    web : str
+        Web string representation (human readable if possible).
+    force_long : bool, optional
+        Force 6 digits representation of `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ color.
 
-    Usage
-    =====
+    Returns
+    -------
+    str
+        A 3 hexadecimal characters or 6 hexadecimal characters string representation.
 
-    >>> from colour import web2hex
+    Raises
+    ------
+    AttributeError
+        Invalid `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ representation of color.
+    ValueError
+        Color name not in colors database.
+
+    Examples
+    --------
+
+    >>> from python_utils.colour import web2hex
 
     >>> web2hex('red')
     '#f00'
@@ -639,7 +633,7 @@ def web2hex(web, force_long=False):
     >>> web2hex('#aaa')
     '#aaa'
 
-    >>> web2hex('#foo')  # doctest: +ELLIPSIS
+    >>> web2hex('#foo')
     Traceback (most recent call last):
     ...
     AttributeError: '#foo' is not in web format. Need 3 or 6 hex digit.
@@ -650,18 +644,19 @@ def web2hex(web, force_long=False):
     >>> web2hex('#aaaaaa')
     '#aaaaaa'
 
-    >>> web2hex('#aaaa')  # doctest: +ELLIPSIS
+    >>> web2hex('#aaaa')
     Traceback (most recent call last):
     ...
     AttributeError: '#aaaa' is not in web format. Need 3 or 6 hex digit.
 
-    >>> web2hex('pinky')  # doctest: +ELLIPSIS
+    >>> web2hex('pinky')
     Traceback (most recent call last):
     ...
     ValueError: 'pinky' is not a recognized color.
 
-    And color names are case insensitive:
+    And color names are case insensitive
 
+    >>> from python_utils.colour import Color
     >>> Color('RED')
     <Color red>
 
@@ -673,82 +668,114 @@ def web2hex(web, force_long=False):
             return "#" + "".join([("%s" % (t,)) * 2 for t in web[1:]])
         raise AttributeError("%r is not in web format. Need 3 or 6 hex digit." % web)
 
-    web = web.lower()
-    if web not in COLOR_NAME_TO_RGB:
+    web = sanitize_color_name(web)
+    if web not in WEB_COLOR_NAME_TO_RGB:
         raise ValueError("%r is not a recognized color." % web)
 
     # convert dec to hex:
 
-    return rgb2hex([float(int(v)) / 255 for v in COLOR_NAME_TO_RGB[web]], force_long)
+    return rgb2hex([float(int(v)) / 255 for v in WEB_COLOR_NAME_TO_RGB[web]], force_long)
 
 
 # Missing functions conversion
 
 
-def hsl2hex(x):
+def hsl2hex(x: InputColor3Tuple) -> str:
+    """`HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ to
+    `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ conversion.
+
+    Parameters
+    ----------
+    x : InputColor3Tuple
+        `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ color.
+
+    Returns
+    -------
+    str
+        `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ color.
+    """
     return rgb2hex(hsl2rgb(x))
 
 
-def hex2hsl(x):
+def hex2hsl(x: str) -> OutputColor3Tuple:
+    """`HEX <https://en.wikipedia.org/wiki/Web_colors>`__ to
+    `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ conversion.
+
+    Parameters
+    ----------
+    x : str
+        `HEX <https://en.wikipedia.org/wiki/Web_colors>`__ color.
+
+    Returns
+    -------
+    OutputColor3Tuple
+        `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ color.
+    """
     return rgb2hsl(hex2rgb(x))
 
 
-def rgb2web(x):
+def rgb2web(x: InputColor3Tuple) -> str:
+    """`RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ to web conversion.
+
+    Parameters
+    ----------
+    x : InputColor3Tuple
+        `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ color.
+
+    Returns
+    -------
+    str
+        Web color.
+    """
     return hex2web(rgb2hex(x))
 
 
-def web2rgb(x):
+def web2rgb(x: str) -> OutputColor3Tuple:
+    """Web to `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ conversion.
+
+    Parameters
+    ----------
+    x : str
+        Web color.
+
+    Returns
+    -------
+    OutputColor3Tuple
+        `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ color.
+    """
     return hex2rgb(web2hex(x))
 
 
-def web2hsl(x):
+def web2hsl(x: str) -> OutputColor3Tuple:
+    """Web to `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ conversion.
+
+    Parameters
+    ----------
+    x : str
+        Web color
+
+    Returns
+    -------
+    OutputColor3Tuple
+        `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ color.
+    """
     return rgb2hsl(web2rgb(x))
 
 
-def hsl2web(x):
-    return rgb2web(hsl2rgb(x))
+def hsl2web(x: InputColor3Tuple) -> str:
+    """`HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ to web conversion.
 
+    Parameters
+    ----------
+    x : InputColor3Tuple
+        `HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__ color.
 
-def color_scale(begin_hsl, end_hsl, nb):
-    """Returns a list of nb color HSL tuples between begin_hsl and end_hsl
-
-    >>> from colour import color_scale
-
-    >>> [rgb2hex(hsl2rgb(hsl)) for hsl in color_scale((0, 1, 0.5),
-    ...                                               (1, 1, 0.5), 3)]
-    ['#f00', '#0f0', '#00f', '#f00']
-
-    >>> [rgb2hex(hsl2rgb(hsl))
-    ...  for hsl in color_scale((0, 0, 0),
-    ...                         (0, 0, 1),
-    ...                         15)]  # doctest: +ELLIPSIS
-    ['#000', '#111', '#222', ..., '#ccc', '#ddd', '#eee', '#fff']
-
-    Of course, asking for negative values is not supported:
-
-    >>> color_scale((0, 1, 0.5), (1, 1, 0.5), -2)
-    Traceback (most recent call last):
-    ...
-    ValueError: Unsupported negative number of colors (nb=-2).
-
+    Returns
+    -------
+    str
+        Web color.
     """
-
-    if nb < 0:
-        raise ValueError("Unsupported negative number of colors (nb=%r)." % nb)
-
-    step = (
-        tuple([float(end_hsl[i] - begin_hsl[i]) / nb for i in range(0, 3)])
-        if nb > 0
-        else (0, 0, 0)
-    )
-
-    def mul(step, value):
-        return tuple([v * value for v in step])
-
-    def add_v(step, step2):
-        return tuple([v + step2[i] for i, v in enumerate(step)])
-
-    return [add_v(begin_hsl, mul(step, r)) for r in range(0, nb + 1)]
+    return rgb2web(hsl2rgb(x))
 
 
 ##
@@ -756,29 +783,42 @@ def color_scale(begin_hsl, end_hsl, nb):
 ##
 
 
-def RGB_color_picker(obj):
+def RGB_color_picker(obj: object) -> Color:
     """Build a color representation from the string representation of an object
+
+    Parameters
+    ----------
+    obj : object
+        Description
+
+    Returns
+    -------
+    Color
+        Description
+
+    Examples
+    --------
 
     This allows to quickly get a color from some data, with the
     additional benefit that the color will be the same as long as the
-    (string representation of the) data is the same::
+    (string representation of the) data is the same:
 
-        >>> from colour import RGB_color_picker, Color
+    >>> from python_utils.colour import RGB_color_picker, Color
 
-    Same inputs produce the same result::
+    Same inputs produce the same result:
 
-        >>> RGB_color_picker("Something") == RGB_color_picker("Something")
-        True
+    >>> RGB_color_picker("Something") == RGB_color_picker("Something")
+    True
 
-    ... but different inputs produce different colors::
+    ...but different inputs produce different colors:
 
-        >>> RGB_color_picker("Something") != RGB_color_picker("Something else")
-        True
+    >>> RGB_color_picker("Something") != RGB_color_picker("Something else")
+    True
 
-    In any case, we still get a ``Color`` object::
+    In any case, we still get a ``Color`` object:
 
-        >>> isinstance(RGB_color_picker("Something"), Color)
-        True
+    >>> isinstance(RGB_color_picker("Something"), Color)
+    True
 
     """
 
@@ -803,193 +843,197 @@ def RGB_color_picker(obj):
     return Color(rgb2hex(components))  # Profit!
 
 
-def hash_or_str(obj):
-    try:
-        return hash((type(obj).__name__, obj))
-    except TypeError:
-        # Adds the type name to make sure two object of different type but
-        # identical string representation get distinguished.
-        return type(obj).__name__ + str(obj)
-
-
 ##
 # All purpose object
 ##
 
 
 class Color(object):
-    """Abstraction of a color object
+    """Abstraction of a color object.
 
-        Color object keeps information of a color. It can input/output to different
-        format (HSL, RGB, HEX, WEB) and their partial representation.
+    Attributes
+    ----------
+    equality : TYPE
+        Description
+    hex : TYPE
+        Description
+    hsl : TYPE
+        Description
+    rgb : TYPE
+        Description
+    web : TYPE
+        Description
 
-            >>> from colour import Color, HSL
+    Examples
+    --------
 
-            >>> b = Color()
-            >>> b.hsl = HSL.BLUE
+    Color object keeps information of a color. It can input/output to different
+    format (`HSL <https://en.wikipedia.org/wiki/HSL_and_HSV>`__,
+    `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__,
+    `HEX <https://en.wikipedia.org/wiki/Web_colors>`__,
+    `WEB <https://en.wikipedia.org/wiki/Web_colors>`__) and their partial representation.
 
-        Access values
-        -------------
+    >>> from python_utils.colour import Color, HSL
 
-            >>> b.hue  # doctest: +ELLIPSIS
-            0.66...
-            >>> b.saturation
-            1.0
-            >>> b.luminance
-            0.5
+    >>> b = Color()
+    >>> b.hsl = HSL.BLUE
 
-            >>> b.red
-            0.0
-            >>> b.blue
-            1.0
-            >>> b.green
-            0.0
+    Access values
 
-            >>> b.rgb
-            (0.0, 0.0, 1.0)
-            >>> b.hsl  # doctest: +ELLIPSIS
-            (0.66..., 1.0, 0.5)
-            >>> b.hex
-            '#00f'
+    >>> b.hue
+    0.66...
+    >>> b.saturation
+    1.0
+    >>> b.luminance
+    0.5
 
-        Change values
-        -------------
+    >>> b.red
+    0.0
+    >>> b.blue
+    1.0
+    >>> b.green
+    0.0
 
-        Let's change Hue toward red tint:
+    >>> b.rgb
+    (0.0, 0.0, 1.0)
+    >>> b.hsl
+    (0.66..., 1.0, 0.5)
+    >>> b.hex
+    '#00f'
 
-            >>> b.hue = 0.0
-            >>> b.hex
-            '#f00'
+    Change values
 
-            >>> b.hue = 2.0/3
-            >>> b.hex
-            '#00f'
+    Let's change Hue toward red tint:
 
-        In the other way round:
+    >>> b.hue = 0.0
+    >>> b.hex
+    '#f00'
 
-            >>> b.hex = '#f00'
-            >>> b.hsl
-            (0.0, 1.0, 0.5)
+    >>> b.hue = 2.0/3
+    >>> b.hex
+    '#00f'
 
-        Long hex can be accessed directly:
+    In the other way round:
 
-            >>> b.hex_l = '#123456'
-            >>> b.hex_l
-            '#123456'
-            >>> b.hex
-            '#123456'
+    >>> b.hex = '#f00'
+    >>> b.hsl
+    (0.0, 1.0, 0.5)
 
-            >>> b.hex_l = '#ff0000'
-            >>> b.hex_l
-            '#ff0000'
-            >>> b.hex
-            '#f00'
+    Long hex can be accessed directly:
 
-        Convenience
-        -----------
+    >>> b.hex_l = '#123456'
+    >>> b.hex_l
+    '#123456'
+    >>> b.hex
+    '#123456'
 
-            >>> c = Color('blue')
-            >>> c
-            <Color blue>
-            >>> c.hue = 0
-            >>> c
-            <Color red>
+    >>> b.hex_l = '#ff0000'
+    >>> b.hex_l
+    '#ff0000'
+    >>> b.hex
+    '#f00'
 
-            >>> c.saturation = 0.0
-            >>> c.hsl  # doctest: +ELLIPSIS
-            (..., 0.0, 0.5)
-            >>> c.rgb
-            (0.5, 0.5, 0.5)
-            >>> c.hex
-            '#7f7f7f'
-            >>> c
-            <Color #7f7f7f>
+    Convenience
 
-            >>> c.luminance = 0.0
-            >>> c
-            <Color black>
+    >>> c = Color('blue')
+    >>> c
+    <Color blue>
+    >>> c.hue = 0
+    >>> c
+    <Color red>
 
-            >>> c.hex
-            '#000'
+    >>> c.saturation = 0.0
+    >>> c.hsl
+    (..., 0.0, 0.5)
+    >>> c.rgb
+    (0.5, 0.5, 0.5)
+    >>> c.hex
+    '#7f7f7f'
+    >>> c
+    <Color #7f7f7f>
 
-            >>> c.green = 1.0
-            >>> c.blue = 1.0
-            >>> c.hex
-            '#0ff'
-            >>> c
-            <Color cyan>
+    >>> c.luminance = 0.0
+    >>> c
+    <Color black>
 
-            >>> c = Color('blue', luminance=0.75)
-            >>> c
-            <Color #7f7fff>
+    >>> c.hex
+    '#000'
 
-            >>> c = Color('red', red=0.5)
-            >>> c
-            <Color #7f0000>
+    >>> c.green = 1.0
+    >>> c.blue = 1.0
+    >>> c.hex
+    '#0ff'
+    >>> c
+    <Color aqua>
 
-            >>> print(c)
-            #7f0000
+    >>> c = Color('blue', luminance=0.75)
+    >>> c
+    <Color #7f7fff>
 
-        You can try to query unexisting attributes:
+    >>> c = Color('red', red=0.5)
+    >>> c
+    <Color #7f0000>
 
-            >>> c.lightness  # doctest: +ELLIPSIS
-            Traceback (most recent call last):
-            ...
-            AttributeError: 'lightness' not found
+    >>> print(c)
+    #7f0000
 
-        TODO: could add HSV, CMYK, YUV conversion.
+    You can try to query non-existing attributes:
 
-    #     >>> b.hsv
-    #     >>> b.value
-    #     >>> b.cyan
-    #     >>> b.magenta
-    #     >>> b.yellow
-    #     >>> b.key
-    #     >>> b.cmyk
+    >>> c.lightness
+    Traceback (most recent call last):
+    ...
+    AttributeError: 'lightness' not found
 
+    **Recursive initialization**
 
-        Recursive init
-        --------------
+    To support blind conversion of web strings (or already converted object),
+    the Color object supports instantiation with another Color object.
 
-        To support blind conversion of web strings (or already converted object),
-        the Color object supports instantiation with another Color object.
+    >>> Color(Color(Color('red')))
+    <Color red>
 
-            >>> Color(Color(Color('red')))
-            <Color red>
+    **Equality support**
 
-        Equality support
-        ----------------
+    Default equality is `RGB <https://en.wikipedia.org/wiki/RGB_color_model>`__ hex comparison:
 
-        Default equality is RGB hex comparison:
+    >>> Color('red') == Color('blue')
+    False
+    >>> Color('red') == Color('red')
+    True
+    >>> Color('red') != Color('blue')
+    True
+    >>> Color('red') != Color('red')
+    False
 
-            >>> Color('red') == Color('blue')
-            False
-            >>> Color('red') == Color('red')
-            True
-            >>> Color('red') != Color('blue')
-            True
-            >>> Color('red') != Color('red')
-            False
+    But this can be changed:
 
-        But this can be changed:
+    >>> saturation_equality = lambda c1, c2: c1.luminance == c2.luminance
+    >>> Color('red', equality=saturation_equality) == Color('blue')
+    True
 
-            >>> saturation_equality = lambda c1, c2: c1.luminance == c2.luminance
-            >>> Color('red', equality=saturation_equality) == Color('blue')
-            True
+    **Sub-classing support**
 
+    You should be able to subclass ``Color`` object without any issues:
 
-        Subclassing support
-        -------------------
+    >>> class Tint(Color):
+    ...     pass
 
-        You should be able to subclass ``Color`` object without any issues::
+    And keep the internal API working:
 
-            >>> class Tint(Color):
-            ...     pass
+    >>> Tint("red").hsl
+    (0.0, 1.0, 0.5)
 
-        And keep the internal API working::
+    Todo
+    ----
+    Could add HSV, CMYK, YUV conversion.
 
-            >>> Tint("red").hsl
-            (0.0, 1.0, 0.5)
+    >>> b.hsv            # doctest: +SKIP
+    >>> b.value          # doctest: +SKIP
+    >>> b.cyan           # doctest: +SKIP
+    >>> b.magenta        # doctest: +SKIP
+    >>> b.yellow         # doctest: +SKIP
+    >>> b.key            # doctest: +SKIP
+    >>> b.cmyk           # doctest: +SKIP
 
     """
 
@@ -997,16 +1041,47 @@ class Color(object):
 
     def __init__(
         self,
-        color=None,
+        color: str = None,
         pick_for=None,
-        picker=RGB_color_picker,
-        pick_key=hash_or_str,
+        picker: Callable[..., Color] = RGB_color_picker,
+        pick_key: Callable[[object], int | str] = hash_or_str,
         **kwargs,
     ):
+        """See :py:meth:`object.__init__`.
 
+        Parameters
+        ----------
+        color : str, optional
+            Description
+        pick_for : None, optional
+            Description
+        picker : Callable[..., Color], optional
+            Description
+        pick_key : Callable[[object], int | str], optional
+            Description
+        **kwargs
+            Description
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         if pick_key is None:
 
             def pick_key(x):
+                """Summary
+
+                Parameters
+                ----------
+                x : TYPE
+                    Description
+
+                Returns
+                -------
+                TYPE
+                    Description
+                """
                 return x
 
         if pick_for is not None:
@@ -1023,6 +1098,23 @@ class Color(object):
             setattr(self, k, v)
 
     def __getattr__(self, label):
+        """See :py:meth:`object.__getattr__`.
+
+        Parameters
+        ----------
+        label : TYPE
+            Description
+
+        Returns
+        -------
+        TYPE
+            Description
+
+        Raises
+        ------
+        AttributeError
+            Description
+        """
         if label.startswith("get_"):
             raise AttributeError("'%s' not found" % label)
         try:
@@ -1031,6 +1123,15 @@ class Color(object):
             raise AttributeError("'%s' not found" % label)
 
     def __setattr__(self, label, value):
+        """See :py:meth:`object.__setattr__`.
+
+        Parameters
+        ----------
+        label : TYPE
+            Description
+        value : TYPE
+            Description
+        """
         if label not in ["_hsl", "equality"]:
             fc = getattr(self, "set_" + label)
             fc(value)
@@ -1042,36 +1143,113 @@ class Color(object):
     ##
 
     def get_hsl(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return tuple(self._hsl)
 
     def get_hex(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return rgb2hex(self.rgb)
 
     def get_hex_l(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return rgb2hex(self.rgb, force_long=True)
 
     def get_rgb(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return hsl2rgb(self.hsl)
 
     def get_hue(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return self.hsl[0]
 
     def get_saturation(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return self.hsl[1]
 
     def get_luminance(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return self.hsl[2]
 
     def get_red(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return self.rgb[0]
 
     def get_green(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return self.rgb[1]
 
     def get_blue(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return self.rgb[2]
 
     def get_web(self):
+        """Summary
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return hex2web(self.hex)
 
     ##
@@ -1079,43 +1257,135 @@ class Color(object):
     ##
 
     def set_hsl(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         self._hsl = list(value)
 
     def set_rgb(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         self.hsl = rgb2hsl(value)
 
     def set_hue(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         self._hsl[0] = value
 
     def set_saturation(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         self._hsl[1] = value
 
     def set_luminance(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         self._hsl[2] = value
 
     def set_red(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         _, g, b = self.rgb
         self.rgb = (value, g, b)
 
     def set_green(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         r, _, b = self.rgb
         self.rgb = (r, value, b)
 
     def set_blue(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         r, g, _ = self.rgb
         self.rgb = (r, g, value)
 
     def set_hex(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         self.rgb = hex2rgb(value)
 
-    set_hex_l = set_hex
+    def set_hex_l(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
+        self.set_hex(value)
 
     def set_web(self, value):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        """
         self.hex = web2hex(value)
 
     # range of color generation
 
     def range_to(self, value, steps):
+        """Summary
+
+        Parameters
+        ----------
+        value : TYPE
+            Description
+        steps : TYPE
+            Description
+
+        Yields
+        ------
+        TYPE
+            Description
+        """
         for hsl in color_scale(self._hsl, Color(value).hsl, steps - 1):
             yield Color(hsl=hsl)
 
@@ -1124,36 +1394,121 @@ class Color(object):
     ##
 
     def __str__(self):
+        """See :py:meth:`object.__str__`.
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return "%s" % self.web
 
     def __repr__(self):
+        """See :py:meth:`object.__repr__`.
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         return "<Color %s>" % self.web
 
     def __eq__(self, other):
+        """See :py:meth:`object.__eq__`.
+
+        Parameters
+        ----------
+        other : TYPE
+            Description
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         if isinstance(other, Color):
             return self.equality(self, other)
         return NotImplemented
 
 
-Colour = Color
+class Colour(Color):
+    """Class equivalent to :py:class:`Color` class to add consistency with the name of the module.
+
+    >>> from python_utils.colour import Colour, Color
+
+    >>> red = Colour("red")
+    >>> isinstance(red, Color)
+    True
+    """
 
 
 def RGB_equivalence(c1, c2):
+    """Summary
+
+    Parameters
+    ----------
+    c1 : TYPE
+        Description
+    c2 : TYPE
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
     return c1.hex_l == c2.hex_l
 
 
 def HSL_equivalence(c1, c2):
+    """Summary
+
+    Parameters
+    ----------
+    c1 : TYPE
+        Description
+    c2 : TYPE
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
     return c1._hsl == c2._hsl
 
 
 def make_color_factory(**kwargs_defaults):
+    """Summary
+
+    Parameters
+    ----------
+    **kwargs_defaults
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+
     def ColorFactory(*args, **kwargs):
+        """Summary
+
+        Parameters
+        ----------
+        *args
+            Description
+        **kwargs
+            Description
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
         new_kwargs = kwargs_defaults.copy()
         new_kwargs.update(kwargs)
         return Color(*args, **new_kwargs)
 
     return ColorFactory
-
-
-if __name__ == "__main__":
-    pass
