@@ -10,14 +10,25 @@ STREAM_STDERR : int
 STREAM_STDOUT : int
     1
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import logging_system
+    from collections.abc import Generator
+
 import os
 import platform
 import subprocess
 
 
-STREAM_STDOUT = 1
-STREAM_STDERR = 2
-STREAM_BOTH = STREAM_STDOUT + STREAM_STDERR
+STREAM_STDOUT: int = 1
+STREAM_STDERR: int = 2
+STREAM_BOTH: int = STREAM_STDOUT + STREAM_STDERR
+
+# NOTE: The following get_startup_info method is not typed due to all module's attributes
+# not being available on Python for Linux. Duh!!!
 
 
 def get_startup_info():
@@ -38,26 +49,36 @@ def get_startup_info():
     return None
 
 
-def popen(cmd, stdout=None, stderr=None, output_stream=STREAM_BOTH,
-          env=None, cwd=None, logger=None, **kwargs):
+def popen(
+    cmd: list[str],
+    stdout: int | None = None,
+    stderr: int | None = None,
+    output_stream: int = STREAM_BOTH,
+    env: dict | None = None,
+    cwd: str | None = None,
+    logger: logging_system.Logger | None = None,
+    **kwargs,
+):
     """Open a pipe to an external process and return a Popen object.
 
     Parameters
     ----------
-    cmd : list
+    cmd : list[str]
         The command to run.
-    stdout : None, optional
+    stdout : int | None, optional
         Pipe to be connected to the standard output stream.
-    stderr : None, optional
+    stderr : int | None, optional
         Pipe to be connected to the standard error stream.
     output_stream : int, optional
         Which output streams should be used (stdout, stderr or both).
-    env : None, optional
+    env : dict | None, optional
         A mapping object representing the string environment.
-    cwd : None, optional
+    cwd : str | None, optional
         Path to working directory.
-    logger : LogSystem
+    logger : logging_system.Logger | None, optional
         The logger.
+    **kwargs
+        Keyword arguments.
 
     Returns
     -------
@@ -89,18 +110,30 @@ def popen(cmd, stdout=None, stderr=None, output_stream=STREAM_BOTH,
             startupinfo=get_startup_info(),
             env=env,
             cwd=cwd,
-            **kwargs
+            **kwargs,
         )
     except Exception as err:
-        if logger:
-            msg = 'Could not launch ' + repr(cmd) + '\nReason: ' + \
-                str(err) + '\nPATH: ' + env.get('PATH', '')
+        if logger is not None:
+            msg: str = (
+                "Could not launch "
+                + repr(cmd)
+                + "\nReason: "
+                + str(err)
+                + "\nPATH: "
+                + env.get("PATH", "")
+            )
             logger.error(msg)
 
         raise
 
 
-def exec_command(cmd, cwd=None, do_wait=True, do_log=True, logger=None):
+def exec_command(
+    cmd: str,
+    cwd: str | None = None,
+    do_wait: bool = True,
+    do_log: bool = True,
+    logger: logging_system.Logger | None = None,
+) -> None:
     """Execute command.
 
     Run commands using Popen.
@@ -109,17 +142,17 @@ def exec_command(cmd, cwd=None, do_wait=True, do_log=True, logger=None):
     ----------
     cmd : str
         The command to run.
-    cwd : str
+    cwd : str | None, optional
         Working directory used by the command.
     do_wait : bool, optional
         Call or not the Popen wait() method. (default: {True})
     do_log : bool, optional
         Log or not the command output. (default: {True})
-    logger : LogSystem
+    logger : logging_system.Logger | None, optional
         The logger.
     """
     try:
-        po = subprocess.Popen(
+        po: subprocess.Popen = subprocess.Popen(
             cmd,
             shell=True,
             stdout=subprocess.PIPE,
@@ -127,7 +160,7 @@ def exec_command(cmd, cwd=None, do_wait=True, do_log=True, logger=None):
             universal_newlines=True,
             env=get_environment(),
             startupinfo=get_startup_info(),
-            cwd=cwd
+            cwd=cwd,
         )
 
         if do_wait:
@@ -146,7 +179,7 @@ def exec_command(cmd, cwd=None, do_wait=True, do_log=True, logger=None):
         logger.error(err)
 
 
-def get_environment(set_vars={}, unset_vars=[]):
+def get_environment(set_vars: dict = {}, unset_vars: list = []) -> dict:
     """Return a dict with os.environ.
 
     Parameters
@@ -161,7 +194,7 @@ def get_environment(set_vars={}, unset_vars=[]):
     dict
         A copy of the system environment.
     """
-    env = {}
+    env: dict = {}
     env.update(os.environ)
 
     if set_vars:
@@ -174,7 +207,7 @@ def get_environment(set_vars={}, unset_vars=[]):
     return env
 
 
-def can_exec(path):
+def can_exec(path: str) -> bool:
     """Return whether the given path is a file and is executable.
 
     Parameters
@@ -190,7 +223,7 @@ def can_exec(path):
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
 
-def which(cmd):
+def which(cmd: str) -> str | None:
     """Return the full path to an executable searching PATH.
 
     Parameters
@@ -200,8 +233,7 @@ def which(cmd):
 
     Returns
     -------
-    str|None
-        The path to the executable.
+    str | None
     """
     for path in find_executables(cmd):
         return path
@@ -209,7 +241,7 @@ def which(cmd):
     return None
 
 
-def find_executables(executable):
+def find_executables(executable: str) -> Generator[str, None, None]:
     """Yield full paths to given executable.
 
     Parameters
@@ -219,13 +251,13 @@ def find_executables(executable):
 
     Returns
     -------
-    str|None
+    Generator[str, None, None]
         Path to executable.
     """
-    env = get_environment()
+    env: dict = get_environment()
 
     for base in env.get("PATH", "").split(os.pathsep):
-        path = os.path.join(os.path.expanduser(base), executable)
+        path: str = os.path.join(os.path.expanduser(base), executable)
 
         if can_exec(path):
             yield path
@@ -233,18 +265,24 @@ def find_executables(executable):
     return None
 
 
-def run_cmd(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=True, **kwargs):
+def run_cmd(
+    cmd: str | list,
+    stdout: int = subprocess.PIPE,
+    stderr: int = subprocess.PIPE,
+    env: dict | bool = True,
+    **kwargs,
+) -> subprocess.CompletedProcess:
     """See :any:`subprocess.run`.
 
     Parameters
     ----------
-    cmd : list|str
+    cmd : str | list
         See :any:`subprocess.run`.
-    stdout : None|int|file object, optional
+    stdout : int, optional
         See :any:`subprocess.run`.
-    stderr : None|int|file object, optional
+    stderr : int, optional
         See :any:`subprocess.run`.
-    env : object, optional
+    env : dict | bool, optional
         See :any:`subprocess.run`.
     **kwargs
         See :any:`subprocess.run`.
@@ -259,11 +297,13 @@ def run_cmd(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=True, **kwa
     # Sphinx, the entire environment is dumped into the generated documentation. ¬¬
     if env is True:
         env = get_environment()
+    elif env is False:
+        env = None
 
     return subprocess.run(cmd, stdout=stdout, stderr=stderr, env=env, **kwargs)
 
 
-def launch_default_for_file(filepath):
+def launch_default_for_file(filepath: str) -> None:
     """Launch file with default application.
 
     Parameters
@@ -271,11 +311,11 @@ def launch_default_for_file(filepath):
     filepath : str
         File path.
     """
-    if platform.system() == "Darwin":       # MacOS
+    if platform.system() == "Darwin":  # MacOS
         subprocess.call(("open", filepath))
-    elif platform.system() == "Windows":    # Windows
-        os.startfile(filepath)
-    else:                                   # Linux variants
+    elif platform.system() == "Windows":  # Windows
+        os.startfile(filepath)  # type: ignore[attr-defined]
+    else:  # Linux variants
         subprocess.call(("xdg-open", filepath))
 
 
