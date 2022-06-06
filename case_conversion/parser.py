@@ -16,7 +16,9 @@ from .utils import simple_acronym_detection
 
 
 def parse_case(
-    string: str, acronyms: Optional[List[str]] = None, preserve_case: bool = False,
+    string: str,
+    acronyms: Optional[List[str]] = None,
+    preserve_case: bool = False,
 ) -> Tuple[List[str], Case, str]:
     """Split a string into words, determine its case and seperator.
 
@@ -27,25 +29,27 @@ def parse_case(
     acronyms : Optional[List[str]], optional
         List of acronyms to honor
     preserve_case : bool, optional
-        Whether to preserve case of acronym
+        Whether to preserve case of acronym.
 
     Returns
     -------
-    list of str
-        Segmented input string.
-    Case
-        Determined case.
-    str
-        Determined seperator.
+    Tuple[List[str], Case, str]
+        List[str]
+            Segmented input string.
+        Case
+            Determined case.
+        str
+            Determined separator.
 
     Examples
     --------
+    >>> from python_utils.case_conversion.parser import parse_case
     >>> parse_case("hello_world")
-    ["Hello", "World"], Case.LOWER, "_"
-    >>> parse_case("helloHTMLWorld", ["HTML"])
-    ["Hello", "HTML", World"], Case.MIXED, None
-    >>> parse_case("helloHtmlWorld", ["HTML"], True)
-    ["Hello", "Html", World"], Case.CAMEL, None
+    (['Hello', 'World'], <Case.LOWER: 3>, '_')
+    >>> parse_case("helloHTMLWorld", acronyms=["HTML"])
+    (['Hello', 'HTML', 'World'], <Case.CAMEL: 4>, '')
+    >>> parse_case("helloHtmlWorld", acronyms=["HTML"], preserve_case=True)
+    (['hello', 'Html', 'World'], <Case.CAMEL: 4>, '')
     """
     words_with_sep, separator, was_upper = segment_string(string)
 

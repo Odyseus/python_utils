@@ -24,12 +24,13 @@ def camel(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> camel("hello world")
+    >>> from python_utils.case_conversion import converter
+    >>> converter.camel("hello world")
     'helloWorld'
-    >>> camel("HELLO_HTML_WORLD", ["HTML"])
+    >>> converter.camel("HELLO_HTML_WORLD", acronyms=["HTML"])
     'helloHTMLWorld'
     """
-    words, *_ = parse_case(text, acronyms)
+    words, *_ = parse_case(text, acronyms=acronyms)
     if words:
         words[0] = words[0].lower()
     return "".join(words)
@@ -54,12 +55,12 @@ def pascal(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> pascal("hello world")
+    >>> converter.pascal("hello world")
     'HelloWorld'
-    >>> pascal("HELLO_HTML_WORLD", ["HTML"])
+    >>> converter.pascal("HELLO_HTML_WORLD", acronyms=["HTML"])
     'HelloHTMLWorld'
     """
-    words, *_ = parse_case(text, acronyms)
+    words, *_ = parse_case(text, acronyms=acronyms)
     return "".join(words)
 
 
@@ -80,12 +81,12 @@ def snake(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> snake("hello world")
+    >>> converter.snake("hello world")
     'hello_world'
-    >>> snake("HelloHTMLWorld", ["HTML"])
+    >>> converter.snake("HelloHTMLWorld", acronyms=["HTML"])
     'hello_html_world'
     """
-    words, *_ = parse_case(text, acronyms)
+    words, *_ = parse_case(text, acronyms=acronyms)
     return "_".join([w.lower() for w in words])
 
 
@@ -108,12 +109,12 @@ def dash(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> dash("hello world")
+    >>> converter.dash("hello world")
     'hello-world'
-    >>> dash("HelloHTMLWorld", ["HTML"])
+    >>> converter.dash("HelloHTMLWorld", acronyms=["HTML"])
     'hello-html-world'
     """
-    words, *_ = parse_case(text, acronyms)
+    words, *_ = parse_case(text, acronyms=acronyms)
     return "-".join([w.lower() for w in words])
 
 
@@ -136,12 +137,12 @@ def const(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> const("hello world")
+    >>> converter.const("hello world")
     'HELLO_WORLD'
-    >>> const("helloHTMLWorld", ["HTML"])
+    >>> converter.const("helloHTMLWorld", acronyms=["HTML"])
     'HELLO_HTML_WORLD'
     """
-    words, *_ = parse_case(text, acronyms)
+    words, *_ = parse_case(text, acronyms=acronyms)
     return "_".join([w.upper() for w in words])
 
 
@@ -162,12 +163,12 @@ def dot(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> dot("hello world")
+    >>> converter.dot("hello world")
     'hello.world'
-    >>> dot("helloHTMLWorld", ["HTML"])
+    >>> converter.dot("helloHTMLWorld", acronyms=["HTML"])
     'hello.html.world'
     """
-    words, *_ = parse_case(text, acronyms)
+    words, *_ = parse_case(text, acronyms=acronyms)
     return ".".join([w.lower() for w in words])
 
 
@@ -188,12 +189,12 @@ def separate_words(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> separate_words("HELLO_WORLD")
+    >>> converter.separate_words("HELLO_WORLD")
     'HELLO WORLD'
-    >>> separate_words("helloHTMLWorld", ["HTML"])
+    >>> converter.separate_words("helloHTMLWorld", acronyms=["HTML"])
     'hello HTML World'
     """
-    words, *_ = parse_case(text, acronyms, preserve_case=True)
+    words, *_ = parse_case(text, acronyms=acronyms, preserve_case=True)
     return " ".join(words)
 
 
@@ -214,12 +215,12 @@ def slash(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> slash("HELLO_WORLD")
+    >>> converter.slash("HELLO_WORLD")
     'HELLO/WORLD'
-    >>> slash("helloHTMLWorld", ["HTML"])
+    >>> converter.slash("helloHTMLWorld", acronyms=["HTML"])
     'hello/HTML/World'
     """
-    words, *_ = parse_case(text, acronyms, preserve_case=True)
+    words, *_ = parse_case(text, acronyms=acronyms, preserve_case=True)
     return "/".join(words)
 
 
@@ -240,12 +241,12 @@ def backslash(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> backslash("HELLO_WORLD")
-    r'HELLO\WORLD'
-    >>> backslash("helloHTMLWorld", ["HTML"])
-    r'hello\HTML\World'
+    >>> converter.backslash("HELLO_WORLD")
+    'HELLO\\WORLD'
+    >>> converter.backslash("helloHTMLWorld", acronyms=["HTML"])
+    'hello\\HTML\\World'
     """
-    words, *_ = parse_case(text, acronyms, preserve_case=True)
+    words, *_ = parse_case(text, acronyms=acronyms, preserve_case=True)
     return "\\".join(words)
 
 
@@ -268,12 +269,12 @@ def ada(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> ada("hello_world")
-    Hello_World
-    >>> ada("helloHTMLWorld", ["HTML"])
-    Hello_HTML_World
+    >>> converter.ada("hello_world")
+    'Hello_World'
+    >>> converter.ada("helloHTMLWorld", acronyms=["HTML"])
+    'Hello_Html_World'
     """
-    words, *_ = parse_case(text, acronyms)
+    words, *_ = parse_case(text, acronyms=acronyms)
     return "_".join([w.capitalize() for w in words])
 
 
@@ -294,12 +295,12 @@ def http_header(text: str, acronyms: Optional[List[str]] = None) -> str:
 
     Examples
     --------
-    >>> http_header("hello_world")
-    Hello-World
-    >>> http_header("helloHTMLWorld", ["HTML"])
-    Hello-HTML-World
+    >>> converter.http_header("hello_world")
+    'Hello-World'
+    >>> converter.http_header("helloHTMLWorld", acronyms=["HTML"])
+    'Hello-Html-World'
     """
-    words, *_ = parse_case(text, acronyms)
+    words, *_ = parse_case(text, acronyms=acronyms)
     return "-".join([w.capitalize() for w in words])
 
 
@@ -326,10 +327,8 @@ def lower(text: str, *args, **kwargs) -> str:
 
     Examples
     --------
-    >>> lower("HELLO_WORLD")
-    hello_world
-    >>> lower("helloHTMLWorld", ["HTML"])
-    Hello_HTML_world
+    >>> converter.lower("HELLO_WORLD")
+    'hello_world'
     """
     return text.lower()
 
@@ -357,10 +356,10 @@ def upper(text: str, *args, **kwargs) -> str:
 
     Examples
     --------
-    >>> upper("hello_world")
-    HELLO_WORLD
-    >>> upper("helloHTMLWorld", ["HTML"])
-    Hello_HTML_world
+    >>> converter.upper("hello_world")
+    'HELLO_WORLD'
+    >>> converter.upper("helloHTMLWorld", acronyms=["HTML"])
+    'HELLOHTMLWORLD'
     """
     return text.upper()
 
@@ -388,10 +387,8 @@ def title(text: str, *args, **kwargs) -> str:
 
     Examples
     --------
-    >>> title("hello_world")
-    Hello_world
-    >>> title("helloHTMLWorld", ["HTML"])
-    Hello_HTML_world
+    >>> converter.title("hello_world")
+    'Hello_World'
     """
     return text.title()
 
@@ -419,9 +416,7 @@ def capital(text: str, *args, **kwargs) -> str:
 
     Examples
     --------
-    >>> capital("hello_world")
-    HELLO_WORLD
-    >>> capital("helloHTMLWorld", ["HTML"])
-    Hello_HTML_world
+    >>> converter.capital("hello_world")
+    'Hello_world'
     """
     return text.capitalize()
