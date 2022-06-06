@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """Miscellaneous exceptions.
 """
+from __future__ import annotations
+
 import sys
 
-from .ansi_colors import Ansi
+from .ansi_colors import colorize
 
 
 class ExceptionWhitoutTraceBack(Exception):
@@ -28,8 +30,8 @@ class ExceptionWhitoutTraceBack(Exception):
     needed for my usage case.
     """
 
-    def __init__(self, msg):
-        """Initialization.
+    def __init__(self, msg: str) -> None:
+        """See :py:meth:`object.__init__`.
 
         Parameters
         ----------
@@ -38,7 +40,7 @@ class ExceptionWhitoutTraceBack(Exception):
         """
         # This is an evil spawn that I don't freaking understand!!!
         # It works as intended for now, so moving on.
-        self.args = Ansi.LIGHT_RED("**{0.__name__}:** {1}".format(type(self), msg)),
+        self.args = (colorize("**{0.__name__}:** {1}".format(type(self), msg), "error"),)
         sys.exit(self)
 
 
@@ -54,8 +56,8 @@ class ExceptionWhitoutTraceBackWarning(Exception):
         Arguments.
     """
 
-    def __init__(self, msg):
-        """Initialization.
+    def __init__(self, msg: str) -> None:
+        """See :py:meth:`object.__init__`.
 
         Parameters
         ----------
@@ -64,16 +66,18 @@ class ExceptionWhitoutTraceBackWarning(Exception):
         """
         # This is an evil spawn that I don't freaking understand!!!
         # It works as intended for now, so moving on.
-        self.args = Ansi.LIGHT_YELLOW("**{0.__name__}:** {1}".format(type(self), msg)),
+        self.args = (colorize("**{0.__name__}:** {1}".format(type(self), msg), "warning"),)
         sys.exit(self)
 
 
 class BadExecutionLocation(ExceptionWhitoutTraceBack):
-    """BadExecutionLocation
-    """
+    """BadExecutionLocation"""
 
-    def __init__(self, msg="All commands must be launched from the application's root directory!!!"):
-        """Initialization.
+    def __init__(
+        self,
+        msg: str = "All commands must be launched from the application's root directory!!!",
+    ) -> None:
+        """See :py:meth:`object.__init__`.
 
         Parameters
         ----------
@@ -84,11 +88,10 @@ class BadExecutionLocation(ExceptionWhitoutTraceBack):
 
 
 class WrongPythonVersion(ExceptionWhitoutTraceBack):
-    """WrongPythonVersion
-    """
+    """WrongPythonVersion"""
 
-    def __init__(self, msg="Minimum Python version supported: 3.5"):
-        """Initialization.
+    def __init__(self, msg: str = "Minimum Python version supported: 3.5") -> None:
+        """See :py:meth:`object.__init__`.
 
         Parameters
         ----------
@@ -99,29 +102,28 @@ class WrongPythonVersion(ExceptionWhitoutTraceBack):
 
 
 class MissingCommand(ExceptionWhitoutTraceBack):
-    """MissingCommand
-    """
+    """MissingCommand"""
+
     pass
 
 
 class MissingDependencyModule(ExceptionWhitoutTraceBack):
-    """MissingDependencyModule
-    """
+    """MissingDependencyModule"""
+
     pass
 
 
 class ExistentLocation(ExceptionWhitoutTraceBack):
-    """ExistentLocation
-    """
+    """ExistentLocation"""
+
     pass
 
 
 class KeyboardInterruption(ExceptionWhitoutTraceBackWarning):
-    """KeyboardInterruption
-    """
+    """KeyboardInterruption"""
 
-    def __init__(self, msg="Operation aborted."):
-        """Initialization.
+    def __init__(self, msg: str = "Operation aborted.") -> None:
+        """See :py:meth:`object.__init__`.
 
         Parameters
         ----------
@@ -133,88 +135,87 @@ class KeyboardInterruption(ExceptionWhitoutTraceBackWarning):
 
 
 class MissingRequiredFile(ExceptionWhitoutTraceBackWarning):
-    """MissingRequiredFile
-    """
+    """MissingRequiredFile"""
+
     pass
 
 
 class InvalidDestination(ExceptionWhitoutTraceBackWarning):
-    """InvalidDestination
-    """
+    """InvalidDestination"""
+
     pass
 
 
 class OperationAborted(ExceptionWhitoutTraceBackWarning):
-    """OperationAborted
-    """
+    """OperationAborted"""
+
     pass
 
 
 class Error(OSError):
-    """Error
-    """
+    """Error"""
+
     pass
 
 
 class ValidationError(Exception):
-    """Raised for validation errors.
-    """
+    """Raised for validation errors."""
+
     pass
 
 
 class WrongValueForOption(ExceptionWhitoutTraceBack):
-    """WrongValueForOption
-    """
+    """WrongValueForOption"""
+
     pass
 
 
 class NoProfileNameProvided(ExceptionWhitoutTraceBack):
-    """NoProfileNameProvided
-    """
+    """NoProfileNameProvided"""
+
     pass
 
 
 class MissingConfigFileForProfile(ExceptionWhitoutTraceBack):
-    """MissingConfigFileForProfile
-    """
+    """MissingConfigFileForProfile"""
+
     pass
 
 
 class MissingSourcesOnConfigFile(ExceptionWhitoutTraceBack):
-    """MissingSourcesOnConfigFile
-    """
+    """MissingSourcesOnConfigFile"""
+
     pass
 
 
 class MalformedSources(ExceptionWhitoutTraceBack):
-    """MalformedSources
-    """
+    """MalformedSources"""
+
     pass
 
 
 class MissingMandatoryField(ExceptionWhitoutTraceBack):
-    """MissingMandatoryField
-    """
+    """MissingMandatoryField"""
+
     pass
 
 
 class MissingMandatoryArgument(ExceptionWhitoutTraceBack):
-    """MissingMandatoryArgument
-    """
+    """MissingMandatoryArgument"""
+
     pass
 
 
 class InvalidArgument(ExceptionWhitoutTraceBack):
-    """InvalidArgument
-    """
+    """InvalidArgument"""
+
     pass
 
 
 class MethodNotImplemented(ExceptionWhitoutTraceBack):
-    """MethodNotImplemented
-    """
+    """MethodNotImplemented"""
 
-    def __init__(self, method=""):
+    def __init__(self, method: str = "") -> None:
         """Initialization.
 
         Parameters
@@ -222,16 +223,15 @@ class MethodNotImplemented(ExceptionWhitoutTraceBack):
         method : str, optional
             A method name.
         """
-        msg = "The <%s> method needs to be implemented." % method
+        msg: str = "The <%s> method needs to be implemented." % method
         print("")
         super().__init__(msg=msg)
 
 
 class MissingMandatoryProperty(ExceptionWhitoutTraceBack):
-    """MissingMandatoryProperty
-    """
+    """MissingMandatoryProperty"""
 
-    def __init__(self, prop=""):
+    def __init__(self, prop: str = "") -> None:
         """Initialization.
 
         Parameters
@@ -239,7 +239,7 @@ class MissingMandatoryProperty(ExceptionWhitoutTraceBack):
         prop : str, optional
             A property name.
         """
-        msg = "The property <%s> needs to be declared." % prop
+        msg: str = "The property <%s> needs to be declared." % prop
         print("")
         super().__init__(msg=msg)
 
