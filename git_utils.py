@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 """Git utilities.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import logging_system
+
 from subprocess import CalledProcessError
 
 from . import cmd_utils
@@ -8,8 +15,15 @@ from . import prompts
 from . import shell_utils
 
 
-def manage_repo(mechanism, action, subtrees=[], do_not_confirm=False,
-                cwd=None, dry_run=False, logger=None):
+def manage_repo(
+    mechanism: str,
+    action: str,
+    subtrees: list[dict[str, str]] = [],
+    do_not_confirm: bool = False,
+    cwd: str = None,
+    dry_run: bool = False,
+    logger: logging_system.Logger | None = None,
+) -> None:
     """Manage repository.
 
     Perform some complex tasks on a repository. Mostly sub-trees and sub-modules initialization.
@@ -20,7 +34,7 @@ def manage_repo(mechanism, action, subtrees=[], do_not_confirm=False,
         Which "mechanism" to work with ("submodule" or "subtree").
     action : str
         Which action to perform ("init" or "update").
-    subtrees : list, optional
+    subtrees : list[dict[str, str]], optional
         A list of dictionaries representing sub-tree options.
 
         - **url**: The sub-tree repository URL.
@@ -28,11 +42,11 @@ def manage_repo(mechanism, action, subtrees=[], do_not_confirm=False,
         - **ref**: The sub-tree repository remote reference (Default: master).
     do_not_confirm : bool, optional
         Do not ask for confirmation before executing commands.
-    cwd : None, optional
+    cwd : str, optional
         Path to working directory. It should be a folder that belongs to a Git repository.
     dry_run : bool, optional
         Do not execute the final commads, just log them.
-    logger : LogSystem
+    logger : logging_system.Logger | None, optional
         The logger.
 
     Note
@@ -40,25 +54,27 @@ def manage_repo(mechanism, action, subtrees=[], do_not_confirm=False,
     Sub-modules are initialized or updated *in-bulk* with just one command. Sub-trees are
     initialized or updated with one command per sub-tree repository.
     """
-    commands = []
+    commands: list[str] = []
 
     if mechanism == "submodule":
-        commands.append("git submodule update %s" %
-                        ("--init" if action == "init" else "--remote --merge"))
+        commands.append(
+            "git submodule update %s" % ("--init" if action == "init" else "--remote --merge")
+        )
     elif mechanism == "subtree":
         for sub_tree in subtrees:
-            sub_ref = sub_tree.get("ref", "master")
-            commit_message = "Merge ref. '{ref}' of {sub_url}".format(
-                ref=sub_ref,
-                sub_url=sub_tree["url"]
+            sub_ref: str = sub_tree.get("ref", "master")
+            commit_message: str = "Merge ref. '{ref}' of {sub_url}".format(
+                ref=sub_ref, sub_url=sub_tree["url"]
             )
-            commands.append("git subtree {cmd} {msg} --prefix {prefix} {url} {ref} --squash".format(
-                cmd="add" if action == "init" else "pull",
-                msg="" if action == "init" else '"-m %s"' % commit_message,
-                prefix=sub_tree["path"],
-                url=sub_tree["url"],
-                ref=sub_ref
-            ))
+            commands.append(
+                "git subtree {cmd} {msg} --prefix {prefix} {url} {ref} --squash".format(
+                    cmd="add" if action == "init" else "pull",
+                    msg="" if action == "init" else '"-m %s"' % commit_message,
+                    prefix=sub_tree["path"],
+                    url=sub_tree["url"],
+                    ref=sub_ref,
+                )
+            )
 
     if commands:
         if do_not_confirm or prompts.confirm(prompt="Proceed?", response=False):
@@ -71,8 +87,14 @@ def manage_repo(mechanism, action, subtrees=[], do_not_confirm=False,
                 else:
                     try:
                         logger.info("**Executing command:**\n%s" % cmd)
-                        cmd_utils.run_cmd(cmd, stdout=None, stderr=None,
-                                          check=True, shell=True, cwd=cwd)
+                        cmd_utils.run_cmd(
+                            cmd,
+                            stdout=None,
+                            stderr=None,
+                            check=True,
+                            shell=True,
+                            cwd=cwd,
+                        )
                     except CalledProcessError as err:
                         logger.error(err)
                         continue
