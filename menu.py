@@ -1,8 +1,25 @@
 # -*- coding: utf-8 -*-
 """Command line menu creator.
+
+Based on: `Menu module <https://pypi.python.org/pypi/Menu>`__.
+
+.. note::
+
+    **Modifications**:
+
+    - Changed some default values to suit my needs.
+    - Some aesthetic changes for better readability of the menu items on the screen.
+    - This modified version doesn't clear the screen every time a menu is opened.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 from . import exceptions
-from .ansi_colors import Ansi
+from .ansi_colors import colorize
 
 
 class Menu(object):
@@ -16,34 +33,31 @@ class Menu(object):
         Whether the menu is open or not.
     is_title_enabled : bool
         Used to whether or not to display the menu title.
-    menu_items : list
+    menu_items : list[tuple[str, Callable[..., None]]]
         The list of menu items to create the menu.
     message : str
         A message/description to use in the menu.
     prompt : str
         The character used as a prompt for the menu.
-    refresh : method
+    refresh : Callable[..., None]
         A function to call before displaying the menu.
     title : str
         A title to use on the menu.
-
-    Note
-    ----
-    Based on: `Menu module <https://pypi.python.org/pypi/Menu>`__.
-
-    **Modifications**:
-
-    - Changed some default values to suit my needs.
-    - Some aesthetic changes for better readability of the menu items on the screen.
-    - This modified version doesn't clear the screen every time a menu is opened.
     """
 
-    def __init__(self, menu_items=[], title="", message="", prompt="❯ ", refresh=lambda: None):
+    def __init__(
+        self,
+        menu_items: list[tuple[str, Callable[..., None]]] = [],
+        title: str = "",
+        message: str = "",
+        prompt: str = "❯ ",
+        refresh: Callable[..., None] = lambda: None,
+    ) -> None:
         """Initialization.
 
         Parameters
         ----------
-        menu_items : list, optional
+        menu_items : list[tuple[str, Callable[..., None]]], optional
             The list of menu items to create the menu.
         title : str, optional
             A title to use on the menu.
@@ -51,24 +65,24 @@ class Menu(object):
             A message/description to use in the menu.
         prompt : str, optional
             The character used as a prompt for the menu.
-        refresh : method, optional
+        refresh : Callable[..., None], optional
             A function to call before displaying the menu.
         """
-        self.menu_items = menu_items
-        self.title = title
-        self.is_title_enabled = bool(title)
-        self.message = message
-        self.is_message_enabled = bool(message)
-        self.refresh = refresh
-        self.prompt = prompt
-        self.is_open = False
+        self.menu_items: list[tuple[str, Callable[..., None]]] = menu_items
+        self.title: str = title
+        self.is_title_enabled: bool = bool(title)
+        self.message: str = message
+        self.is_message_enabled: bool = bool(message)
+        self.refresh: Callable[..., None] = refresh
+        self.prompt: str = prompt
+        self.is_open: bool = False
 
-    def set_menu_items(self, menu_items):
+    def set_menu_items(self, menu_items: list[str]) -> None:
         """Set menu items.
 
         Parameters
         ----------
-        menu_items : list
+        menu_items : list[str]
             List of tuples used to create the menu itmes.
 
         Raises
@@ -80,19 +94,19 @@ class Menu(object):
         ValueError
             If the tuple lenght of the menu item inside the menu list is not equal to two (2).
         """
-        original_menu_items = self.menu_items
+        original_menu_items: list[tuple[str, Callable[..., None]]] = self.menu_items
         self.menu_items = []
 
         try:
             for item in menu_items:
                 if not isinstance(item, tuple):
                     print(item)
-                    print(Ansi.LIGHT_RED("**TypeError:** item is not a tuple"))
+                    print(colorize("**TypeError:** item is not a tuple", "error"))
                     raise TypeError()
 
                 if len(item) != 2:
                     print(item)
-                    print(Ansi.LIGHT_RED("**ValueError:** item is not of length 2"))
+                    print(colorize("**ValueError:** item is not of length 2", "error"))
                     raise ValueError()
 
                 self.add_menu_item(item[0], item[1])
@@ -100,7 +114,7 @@ class Menu(object):
             self.menu_items = original_menu_items
             raise SystemExit()
 
-    def set_title(self, title):
+    def set_title(self, title: str) -> None:
         """Set title.
 
         Parameters
@@ -110,7 +124,7 @@ class Menu(object):
         """
         self.title = title
 
-    def set_title_enabled(self, is_enabled):
+    def set_title_enabled(self, is_enabled: bool) -> None:
         """Set title enabled.
 
         Parameters
@@ -120,7 +134,7 @@ class Menu(object):
         """
         self.is_title_enabled = is_enabled
 
-    def set_message(self, message):
+    def set_message(self, message: str) -> None:
         """Set message.
 
         Parameters
@@ -130,7 +144,7 @@ class Menu(object):
         """
         self.message = message
 
-    def set_message_enabled(self, is_enabled):
+    def set_message_enabled(self, is_enabled: bool) -> None:
         """Set message enabled.
 
         Parameters
@@ -140,7 +154,7 @@ class Menu(object):
         """
         self.is_message_enabled = is_enabled
 
-    def set_prompt(self, prompt):
+    def set_prompt(self, prompt: str) -> None:
         """Set prompt.
 
         Parameters
@@ -150,12 +164,12 @@ class Menu(object):
         """
         self.prompt = prompt
 
-    def set_refresh(self, refresh):
+    def set_refresh(self, refresh: Callable[..., None]) -> None:
         """Set refresh.
 
         Parameters
         ----------
-        refresh : method
+        refresh : Callable[..., None]
             A function to call before displaying the menu.
 
         Raises
@@ -165,19 +179,19 @@ class Menu(object):
         """
         if not callable(refresh):
             print(refresh)
-            print(Ansi.LIGHT_RED("**TypeError:** refresh is not callable"))
+            print(colorize("**TypeError:** refresh is not callable", "error"))
             raise TypeError()
 
         self.refresh = refresh
 
-    def add_menu_item(self, label, handler):
+    def add_menu_item(self, label: str, handler: Callable[..., None]) -> None:
         """Add menu item.
 
         Parameters
         ----------
         label : str
             The text used by a menu item.
-        handler : method
+        handler : Callable[..., None]
             The function to call when activating a menu item.
 
         Raises
@@ -187,12 +201,12 @@ class Menu(object):
         """
         if not callable(handler):
             print(handler)
-            print(Ansi.LIGHT_RED("**TypeError:** handler is not callable"))
+            print(colorize("**TypeError:** handler is not callable", "error"))
             raise TypeError()
 
         self.menu_items += [(label, handler)]
 
-    def open(self):
+    def open(self) -> None:
         """Open menu.
 
         Raises
@@ -207,7 +221,7 @@ class Menu(object):
         try:
             while self.is_open:
                 self.refresh()
-                func = self.input()
+                func: Callable[..., None] = self.input()
 
                 if func == Menu.CLOSE:
                     func = self.close
@@ -221,16 +235,14 @@ class Menu(object):
             self.is_open = False
             raise exceptions.OperationAborted("")
 
-    def close(self):
-        """Close menu.
-        """
+    def close(self) -> None:
+        """Close menu."""
         self.is_open = False
 
-    def show(self):
-        """Display menu.
-        """
+    def show(self) -> None:
+        """Display menu."""
         if self.is_title_enabled:
-            print(Ansi.DEFAULT("**%s**" % self.title))
+            print(colorize("**%s**" % self.title))
             print()
 
         if self.is_message_enabled:
@@ -238,17 +250,17 @@ class Menu(object):
             print()
 
         for (index, item) in enumerate(self.menu_items):
-            print(Ansi.DEFAULT("**%s**" % str(index + 1) + ". "), end="")
+            print(colorize("**%s**" % str(index + 1) + ". "), end="")
             print(item[0])
 
         print()
 
-    def input(self):
+    def input(self) -> Callable[..., None]:
         """Process input.
 
         Returns
         -------
-        method
+        Callable[..., None]
             The method to call when a menu item is activated.
         """
         if len(self.menu_items) == 0:
@@ -256,15 +268,14 @@ class Menu(object):
 
         try:
             self.show()
-            index = int(input(self.prompt)) - 1
+            index: int = int(input(self.prompt)) - 1
             return self.menu_items[index][1]
         except (ValueError, IndexError):
-            print(Ansi.LIGHT_YELLOW("**Invalid item selected!**"))
+            print(colorize("**Invalid item selected!**", "warning"))
             return self.input()
 
-    def CLOSE(self):
-        """Close menu.
-        """
+    def CLOSE(self) -> None:
+        """Close menu."""
         pass
 
 
