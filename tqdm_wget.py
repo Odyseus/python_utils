@@ -3,6 +3,7 @@
 """
 # NOTE: Web developers can go f*ck themselves!!!
 import ssl
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
 from urllib.request import urlretrieve
@@ -22,7 +23,7 @@ class TqdmUpTo(tqdm):
         The number of expected iterations.
     """
 
-    def update_to(self, b=1, bsize=1, tsize=None):
+    def update_to(self, b: int = 1, bsize: int = 1, tsize: int | None = None) -> None:
         """Update to.
 
         Parameters
@@ -31,7 +32,7 @@ class TqdmUpTo(tqdm):
             Number of blocks transferred so far (default: 1).
         bsize : int, optional
             Size of each block (in tqdm units) (default: 1).
-        tsize : int, optional
+        tsize : int | None, optional
             Total size (in tqdm units). If (default: None) remains unchanged.
         """
         if tsize is not None:
@@ -39,7 +40,7 @@ class TqdmUpTo(tqdm):
         self.update(b * bsize - self.n)  # will also set self.n = b * bsize
 
 
-def download(url, filename):
+def download(url: str, filename: str) -> None:
     """Download file.
 
     Parameters
