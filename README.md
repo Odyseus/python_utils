@@ -1,6 +1,8 @@
 
 ## Python modules used in different projects
 
+**The minimum supported Python version is 3.7.**
+
 ### Third party modules
 
 - [bottle](https://github.com/bottlepy/bottle): A fast, simple and lightweight [WSGI](https://wsgi.readthedocs.io/en/latest/) micro web-framework for Python.
@@ -25,6 +27,7 @@
 - [lazy_import](https://github.com/jmrichardson/lazy_import): A module for lazy loading of Python modules.
 - [mistune](https://github.com/lepture/mistune): A markdown parser in pure Python with renderer feature.
 - **multi_select:** Slightly modified version of the [picker](https://github.com/MSchuwalow/picker) Python module.
+- [parso](https://github.com/davidhalter/parso): A Python parser that supports error recovery and round-trip parsing for different Python versions.
 - [polib](https://bitbucket.org/izi/polib): A library to manipulate, create and modify `gettext` files (pot, po and mo files).
 - [Pyperclip](https://github.com/asweigart/pyperclip): A cross-platform Python module for copy and paste clipboard functions.
 - [PyPNG](https://github.com/drj11/pypng): A pure Python library for PNG image encoding/decoding.
