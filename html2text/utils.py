@@ -1,20 +1,60 @@
 # -*- coding: utf-8 -*-
-import html.entities
+"""Summary
 
-from typing import Dict
-from typing import List
-from typing import Optional
+Attributes
+----------
+unifiable_n : dict[int, str]
+    Description
+"""
+from __future__ import annotations
+
+import html.entities
 
 from . import config
 
-unifiable_n = {
-    html.entities.name2codepoint[k]: v
-    for k, v in config.UNIFIABLE.items()
-    if k != "nbsp"
+
+def attr_to_cli(opt_name: str, opt_default_value: bool | None) -> str:
+    """Convert attribute to CLI option.
+
+    Parameters
+    ----------
+    opt_name : str
+        Option name.
+    opt_default_value : bool | None
+        Option default value. Used to decide if the CLI option should be negated.
+
+    Returns
+    -------
+    str
+        CLI option.
+    """
+    dashed_opt: str = opt_name.replace("_", "-")
+
+    if opt_default_value is None:
+        return f"--{dashed_opt}"
+
+    # NOTE: Only negate boolean options.
+    return f'--{"no-" if opt_default_value else ""}{dashed_opt}'
+
+
+unifiable_n: dict[int, str] = {
+    html.entities.name2codepoint[k]: v for k, v in config.UNIFIABLE.items() if k != "nbsp"
 }
 
 
 def hn(tag: str) -> int:
+    """Get heading level from tag.
+
+    Parameters
+    ----------
+    tag : str
+        Description
+
+    Returns
+    -------
+    int
+        Description
+    """
     if tag[0] == "h" and len(tag) == 2:
         n = tag[1]
         if "0" < n <= "9":
@@ -22,9 +62,18 @@ def hn(tag: str) -> int:
     return 0
 
 
-def dumb_property_dict(style: str) -> Dict[str, str]:
-    """
-    :returns: A hash of css attributes
+def dumb_property_dict(style: str) -> dict[str, str]:
+    """Dumb property dictionary.
+
+    Parameters
+    ----------
+    style : str
+        Description
+
+    Returns
+    -------
+    dict[str, str]
+        A hash of css attributes.
     """
     return {
         x.strip().lower(): y.strip().lower()
@@ -32,13 +81,18 @@ def dumb_property_dict(style: str) -> Dict[str, str]:
     }
 
 
-def dumb_css_parser(data: str) -> Dict[str, Dict[str, str]]:
-    """
-    :type data: str
+def dumb_css_parser(data: str) -> dict[str, dict[str, str]]:
+    """Dumb CSS parser.
 
-    :returns: A hash of css selectors, each of which contains a hash of
-    css attributes.
-    :rtype: dict
+    Parameters
+    ----------
+    data : str
+        Description
+
+    Returns
+    -------
+    dict[str, dict[str, str]]
+        A hash of css selectors, each of which contains a hash of css attributes.
     """
     # remove @import sentences
     data += ";"
@@ -59,17 +113,25 @@ def dumb_css_parser(data: str) -> Dict[str, Dict[str, str]]:
 
 
 def element_style(
-    attrs: Dict[str, Optional[str]],
-    style_def: Dict[str, Dict[str, str]],
-    parent_style: Dict[str, str],
-) -> Dict[str, str]:
-    """
-    :type attrs: dict
-    :type style_def: dict
-    :type style_def: dict
+    attrs: dict[str, str | None],
+    style_def: dict[str, dict[str, str]],
+    parent_style: dict[str, str],
+) -> dict[str, str]:
+    """Element style.
 
-    :returns: A hash of the 'final' style attributes of the element
-    :rtype: dict
+    Parameters
+    ----------
+    attrs : dict[str, str | None]
+        Description
+    style_def : dict[str, dict[str, str]]
+        Description
+    parent_style : dict[str, str]
+        Description
+
+    Returns
+    -------
+    dict[str, str]
+        A hash of the 'final' style attributes of the element.
     """
     style = parent_style.copy()
     if "class" in attrs:
@@ -85,42 +147,57 @@ def element_style(
     return style
 
 
-def google_list_style(style: Dict[str, str]) -> str:
-    """
-    Finds out whether this is an ordered or unordered list
+def google_list_style(style: dict[str, str]) -> str:
+    """Finds out whether this is an ordered or unordered list.
 
-    :type style: dict
+    Parameters
+    ----------
+    style : dict[str, str]
+        Description
 
-    :rtype: str
+    Returns
+    -------
+    str
+        Description
     """
     if "list-style-type" in style:
-        list_style = style["list-style-type"]
+        list_style: str = style["list-style-type"]
         if list_style in ["disc", "circle", "square", "none"]:
             return "ul"
 
     return "ol"
 
 
-def google_has_height(style: Dict[str, str]) -> bool:
-    """
-    Check if the style of the element has the 'height' attribute
-    explicitly defined
+def google_has_height(style: dict[str, str]) -> bool:
+    """Check if the style of the element has the 'height' attribute explicitly defined
 
-    :type style: dict
+    Parameters
+    ----------
+    style : dict[str, str]
+        Description
 
-    :rtype: bool
+    Returns
+    -------
+    bool
+        Description
     """
     return "height" in style
 
 
-def google_text_emphasis(style: Dict[str, str]) -> List[str]:
-    """
-    :type style: dict
+def google_text_emphasis(style: dict[str, str]) -> list[str]:
+    """Google text emphasis.
 
-    :returns: A list of all emphasis modifiers of the element
-    :rtype: list
+    Parameters
+    ----------
+    style : dict[str, str]
+        Description
+
+    Returns
+    -------
+    list[str]
+        A list of all emphasis modifiers of the element.
     """
-    emphasis = []
+    emphasis: list[str] = []
     if "text-decoration" in style:
         emphasis.append(style["text-decoration"])
     if "font-style" in style:
@@ -131,27 +208,41 @@ def google_text_emphasis(style: Dict[str, str]) -> List[str]:
     return emphasis
 
 
-def google_fixed_width_font(style: Dict[str, str]) -> bool:
-    """
+def google_fixed_width_font(style: dict[str, str]) -> bool:
+    """Google fixed width font.
+
     Check if the css of the current element defines a fixed width font
 
-    :type style: dict
+    Parameters
+    ----------
+    style : dict[str, str]
+        Description
 
-    :rtype: bool
+    Returns
+    -------
+    bool
+        Description
     """
-    font_family = ""
+    font_family: str = ""
     if "font-family" in style:
         font_family = style["font-family"]
     return "courier new" == font_family or "consolas" == font_family
 
 
-def list_numbering_start(attrs: Dict[str, Optional[str]]) -> int:
-    """
+def list_numbering_start(attrs: dict[str, str | None]) -> int:
+    """List number start.
+
     Extract numbering from list element attributes
 
-    :type attrs: dict
+    Parameters
+    ----------
+    attrs : dict[str, str | None]
+        Description
 
-    :rtype: int or None
+    Returns
+    -------
+    int
+        Description
     """
     if "start" in attrs:
         assert attrs["start"] is not None
@@ -164,6 +255,22 @@ def list_numbering_start(attrs: Dict[str, Optional[str]]) -> int:
 
 
 def skipwrap(para: str, wrap_links: bool, wrap_list_items: bool) -> bool:
+    """Skip wrap.
+
+    Parameters
+    ----------
+    para : str
+        Description
+    wrap_links : bool
+        Description
+    wrap_list_items : bool
+        Description
+
+    Returns
+    -------
+    bool
+        Description
+    """
     # If it appears to contain a link
     # don't wrap
     if not wrap_links and config.RE_LINK.search(para):
@@ -195,16 +302,35 @@ def skipwrap(para: str, wrap_links: bool, wrap_list_items: bool) -> bool:
 
 
 def escape_md(text: str) -> str:
-    """
-    Escapes markdown-sensitive characters within other markdown
-    constructs.
+    """Escapes markdown-sensitive characters within other markdown constructs.
+
+    Parameters
+    ----------
+    text : str
+        Description
+
+    Returns
+    -------
+    str
+        Description
     """
     return config.RE_MD_CHARS_MATCHER.sub(r"\\\1", text)
 
 
 def escape_md_section(text: str, snob: bool = False) -> str:
-    """
-    Escapes markdown-sensitive characters across whole document sections.
+    """Escapes markdown-sensitive characters across whole document sections.
+
+    Parameters
+    ----------
+    text : str
+        Description
+    snob : bool, optional
+        Description
+
+    Returns
+    -------
+    str
+        Description
     """
     text = config.RE_MD_BACKSLASH_MATCHER.sub(r"\\\1", text)
 
@@ -218,10 +344,20 @@ def escape_md_section(text: str, snob: bool = False) -> str:
     return text
 
 
-def reformat_table(lines: List[str], right_margin: int) -> List[str]:
-    """
-    Given the lines of a table
-    padds the cells and returns the new lines
+def reformat_table(lines: list[str], right_margin: int) -> list[str]:
+    """Given the lines of a table padds the cells and returns the new lines.
+
+    Parameters
+    ----------
+    lines : list[str]
+        Description
+    right_margin : int
+        Description
+
+    Returns
+    -------
+    list[str]
+        Description
     """
     # find the maximum width of the columns
     max_width = [len(x.rstrip()) + right_margin for x in lines[0].split("|")]
@@ -237,9 +373,7 @@ def reformat_table(lines: List[str], right_margin: int) -> List[str]:
             max_width += [len(x) + right_margin for x in cols[-(num_cols - max_cols):]]
             max_cols = num_cols
 
-        max_width = [
-            max(len(x) + right_margin, old_len) for x, old_len in zip(cols, max_width)
-        ]
+        max_width = [max(len(x) + right_margin, old_len) for x, old_len in zip(cols, max_width)]
 
     # reformat
     new_lines = []
@@ -248,25 +382,34 @@ def reformat_table(lines: List[str], right_margin: int) -> List[str]:
         if set(line.strip()) == set("-|"):
             filler = "-"
             new_cols = [
-                x.rstrip() + (filler * (M - len(x.rstrip())))
-                for x, M in zip(cols, max_width)
+                x.rstrip() + (filler * (M - len(x.rstrip()))) for x, M in zip(cols, max_width)
             ]
         else:
             filler = " "
             new_cols = [
-                x.rstrip() + (filler * (M - len(x.rstrip())))
-                for x, M in zip(cols, max_width)
+                x.rstrip() + (filler * (M - len(x.rstrip()))) for x, M in zip(cols, max_width)
             ]
         new_lines.append("|".join(new_cols))
     return new_lines
 
 
 def pad_tables_in_text(text: str, right_margin: int = 1) -> str:
-    """
-    Provide padding for tables in the text
+    """Provide padding for tables in the text.
+
+    Parameters
+    ----------
+    text : str
+        Description
+    right_margin : int, optional
+        Description
+
+    Returns
+    -------
+    str
+        Description
     """
     lines = text.split("\n")
-    table_buffer = []  # type: List[str]
+    table_buffer = []  # type: list[str]
     table_started = False
     new_lines = []
     for line in lines:

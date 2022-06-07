@@ -1,5 +1,15 @@
 # -*- coding: utf-8 -*-
-"""html2text: Turn HTML into equivalent Markdown-structured text."""
+"""Turn HTML into equivalent Markdown-structured text.
+"""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .._vendor.html2text import OutCallback
+    from collections.abc import Callable
+    from types import TracebackType
+    from typing import Any
 
 import html.entities
 import html.parser
@@ -7,16 +17,10 @@ import re
 import urllib.parse as urlparse
 
 from textwrap import wrap
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 from . import config
 from .elements import AnchorElement
 from .elements import ListElement
-from .typing import OutCallback
 
 from .utils import dumb_css_parser
 from .utils import element_style
@@ -32,41 +36,7 @@ from .utils import pad_tables_in_text
 from .utils import skipwrap
 from .utils import unifiable_n
 
-__version__ = (2020, 1, 16)
-
-VALID_OPTIONS = (
-    "unicode_snob",
-    "escape_snob",
-    "links_each_paragraph",
-    "body_width",
-    "skip_internal_links",
-    "inline_links",
-    "protect_links",
-    "google_list_indent",
-    "ignore_links",
-    "ignore_images",
-    "images_as_html",
-    "images_to_alt",
-    "images_with_size",
-    "ignore_emphasis",
-    "bypass_tables",
-    "ignore_tables",
-    "google_doc",
-    "ul_item_mark",
-    "emphasis_mark",
-    "strong_mark",
-    "single_line_break",
-    "use_automatic_links",
-    "hide_strikethrough",
-    "mark_code",
-    "wrap_list_items",
-    "wrap_links",
-    "pad_tables",
-    "default_image_alt",
-    "tag_callback",
-    "open_quote",
-    "close_quote",
-)
+__version__ = (2022, 6, 6)
 
 
 # TODO:
@@ -74,124 +44,260 @@ VALID_OPTIONS = (
 
 
 class HTML2Text(html.parser.HTMLParser):
+    """Turn HTML into equivalent Markdown-structured text.
+
+    Attributes
+    ----------
+    a : list[AnchorElement]
+        Description
+    abbr_data : str | None
+        Last inner HTML (for ``abbr`` being defined).
+    abbr_list : dict[str, str]
+        Stack of abbreviations to write later.
+    abbr_title : str | None
+        Current abbreviation definition.
+    absolute_url_matcher : re.Pattern
+        Description
+    acount : int
+        Description
+    astack : list[dict[str, str | None] | None]
+        Description
+    blockquote : int
+        Description
+    br_toggle : str
+        Description
+    code : bool
+        Description
+    current_tag : str
+        Description
+    drop_white_space : int
+        Description
+    emphasis : int
+        Description
+    empty_link : bool
+        Description
+    inheader : bool
+        Description
+    lastWasList : bool
+        Description
+    lastWasNL : bool
+        Description
+    list : list[ListElement]
+        Description
+    maybe_automatic_link : str | None
+        Description
+    out : Callable[[str], None] | OutCallback
+        Description
+    outcount : int
+        Description
+    outtextlist : list[str]
+        List to store output characters before they are *joined*.
+    p_p : int
+        Number of newline characters to print before next output.
+    pre : bool
+        Description
+    preceding_data : str
+        Description
+    preceding_stressed : bool
+        Description
+    quiet : int
+        Description
+    quote : bool
+        Description
+    space : bool
+        Description
+    split_next_td : bool
+        Description
+    start : bool
+        Description
+    startpre : bool
+        Description
+    stressed : bool
+        Description
+    style : int
+        Description
+    style_def : dict[str, dict[str, str]]
+        Description
+    table_start : bool
+        Description
+    tag_callback : Callable[[HTML2Text, str, dict[str, str | None], bool], str] | None
+        Description
+    tag_stack : list[tuple[str, dict[str, str | None], dict[str, str]]]
+        Description
+    td_count : int
+        Description
+    """
+
     def __init__(
         self,
-        out: Optional[OutCallback] = None,
-        baseurl: str = "",
-        bodywidth: int = config.BODY_WIDTH,
+        out: OutCallback | None = None,
+        **kwargs: dict[str, str | bool | int],
     ) -> None:
-        """
-        Input parameters:
-            out: possible custom replacement for self.outtextf (which
-                 appends lines of text).
-            baseurl: base URL of the document we process
+        """See :py:meth:`object.__init__`.
+
+        Parameters
+        ----------
+        out : OutCallback | None, optional
+            Possible custom replacement for :py:meth:`HTML2Text.outtextf` (which appends lines of text).
+        **kwargs : dict[str, str | bool | int]
+            Keyword arguments. See :py:attr:`config.VALID_OPTIONS`.
+
+        Raises
+        ------
+        TypeError
+            Description
         """
         super().__init__(convert_charrefs=False)
 
-        # Config options
-        self.split_next_td = False
-        self.td_count = 0
-        self.table_start = False
-        self.unicode_snob = config.UNICODE_SNOB  # covered in cli
-        self.escape_snob = config.ESCAPE_SNOB  # covered in cli
-        self.links_each_paragraph = config.LINKS_EACH_PARAGRAPH
-        self.body_width = bodywidth  # covered in cli
-        self.skip_internal_links = config.SKIP_INTERNAL_LINKS  # covered in cli
-        self.inline_links = config.INLINE_LINKS  # covered in cli
-        self.protect_links = config.PROTECT_LINKS  # covered in cli
-        self.google_list_indent = config.GOOGLE_LIST_INDENT  # covered in cli
-        self.ignore_links = config.IGNORE_ANCHORS  # covered in cli
-        self.ignore_images = config.IGNORE_IMAGES  # covered in cli
-        self.images_as_html = config.IMAGES_AS_HTML  # covered in cli
-        self.images_to_alt = config.IMAGES_TO_ALT  # covered in cli
-        self.images_with_size = config.IMAGES_WITH_SIZE  # covered in cli
-        self.ignore_emphasis = config.IGNORE_EMPHASIS  # covered in cli
-        self.bypass_tables = config.BYPASS_TABLES  # covered in cli
-        self.ignore_tables = config.IGNORE_TABLES  # covered in cli
-        self.google_doc = False  # covered in cli
-        self.ul_item_mark = config.UL_ITEM_MARK  # covered in cli
-        self.emphasis_mark = config.EMPHASIS_MARK  # covered in cli
-        self.strong_mark = config.STRONG_MARK  # covered in cli
-        self.single_line_break = config.SINGLE_LINE_BREAK  # covered in cli
-        self.use_automatic_links = config.USE_AUTOMATIC_LINKS  # covered in cli
-        self.hide_strikethrough = False  # covered in cli
-        self.mark_code = config.MARK_CODE
-        self.wrap_list_items = config.WRAP_LIST_ITEMS  # covered in cli
-        self.wrap_links = config.WRAP_LINKS  # covered in cli
-        self.pad_tables = config.PAD_TABLES  # covered in cli
-        self.default_image_alt = config.DEFAULT_IMAGE_ALT  # covered in cli
-        self.tag_callback = None
-        self.open_quote = config.OPEN_QUOTE  # covered in cli
-        self.close_quote = config.CLOSE_QUOTE  # covered in cli
+        for opt_name, opt_def in config.VALID_OPTIONS.items():
+            kw: Any = kwargs.get(opt_name)
 
-        if out is None:
-            self.out = self.outtextf
-        else:
-            self.out = out
+            if kw is not None and not isinstance(kw, opt_def["typ"]):
+                raise TypeError(
+                    f"""'{opt_name}' option should be of type '{repr(opt_def["typ"])}'"""
+                )
 
-        # empty list to store output characters before they are "joined"
-        self.outtextlist = []  # type: List[str]
+            setattr(self, opt_name, opt_def["default"] if kw is None else kw)
 
-        self.quiet = 0
-        self.p_p = 0  # number of newline character to print before next output
-        self.outcount = 0
-        self.start = True
-        self.space = False
-        self.a = []  # type: List[AnchorElement]
-        self.astack = []  # type: List[Optional[Dict[str, Optional[str]]]]
-        self.maybe_automatic_link = None  # type: Optional[str]
-        self.empty_link = False
-        self.absolute_url_matcher = re.compile(r"^[a-zA-Z+]+://")
-        self.acount = 0
-        self.list = []  # type: List[ListElement]
-        self.blockquote = 0
-        self.pre = False
-        self.startpre = False
-        self.code = False
-        self.quote = False
-        self.br_toggle = ""
-        self.lastWasNL = False
-        self.lastWasList = False
-        self.style = 0
-        self.style_def = {}  # type: Dict[str, Dict[str, str]]
-        self.tag_stack = (
-            []
-        )  # type: List[Tuple[str, Dict[str, Optional[str]], Dict[str, str]]]
-        self.emphasis = 0
-        self.drop_white_space = 0
-        self.inheader = False
-        # Current abbreviation definition
-        self.abbr_title = None  # type: Optional[str]
-        # Last inner HTML (for abbr being defined)
-        self.abbr_data = None  # type: Optional[str]
-        # Stack of abbreviations to write later
-        self.abbr_list = {}  # type: Dict[str, str]
-        self.baseurl = baseurl
-        self.stressed = False
-        self.preceding_stressed = False
-        self.preceding_data = ""
-        self.current_tag = ""
+        self.split_next_td: bool = False
+        self.td_count: int = 0
+        self.table_start: bool = False
+        self.tag_callback: Callable[
+            [HTML2Text, str, dict[str, str | None], bool], str
+        ] | None = None
+
+        self.out: Callable[[str], None] | OutCallback = out if out is not None else self.outtextf
+        self.outtextlist: list[str] = []
+        self.quiet: int = 0
+        self.p_p: int = 0
+        self.outcount: int = 0
+        self.start: bool = True
+        self.space: bool = False
+        self.a: list[AnchorElement] = []
+        self.astack: list[dict[str, str | None] | None] = []
+        self.maybe_automatic_link: str | None = None
+        self.empty_link: bool = False
+        self.absolute_url_matcher: re.Pattern = re.compile(r"^[a-zA-Z+]+://")
+        self.acount: int = 0
+        self.list: list[ListElement] = []
+        self.blockquote: int = 0
+        self.pre: bool = False
+        self.startpre: bool = False
+        self.code: bool = False
+        self.quote: bool = False
+        self.br_toggle: str = ""
+        self.lastWasNL: bool = False
+        self.lastWasList: bool = False
+        self.style: int = 0
+        self.style_def: dict[str, dict[str, str]] = {}
+        self.tag_stack: list[tuple[str, dict[str, str | None], dict[str, str]]] = []
+        self.emphasis: int = 0
+        self.drop_white_space: int = 0
+        self.inheader: bool = False
+        self.abbr_title: str | None = None
+        self.abbr_data: str | None = None
+        self.abbr_list: dict[str, str] = {}
+        self.stressed: bool = False
+        self.preceding_stressed: bool = False
+        self.preceding_data: str = ""
+        self.current_tag: str = ""
 
         config.UNIFIABLE["nbsp"] = "&nbsp_place_holder;"
 
-    def __enter__(self):
+    def __getattr__(self, name: str) -> Any:
+        """See :py:meth:`object.__getattr__`.
+
+        This is here just to shut the hell up static type checkers.
+
+        Parameters
+        ----------
+        name : str
+            Attribute name.
+
+        Raises
+        ------
+        AttributeError
+            Not defined attribute.
+        """
+        raise AttributeError("Attribute %r not defined." % name)
+
+    def __enter__(self) -> HTML2Text:
+        """See :py:meth:`object.__enter__`.
+
+        Returns
+        -------
+        HTML2Text
+            Class instance.
+        """
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        """See :py:meth:`object.__exit__`.
+
+        Parameters
+        ----------
+        exc_type : type
+            Description
+        exc_value : BaseException
+            Description
+        tb : TracebackType
+            Description
+        """
         self.outtextlist = []
         self.close()
 
-    def set_options(self, options: dict) -> None:
-        if isinstance(options, dict):
-            for k, v in options.items():
-                if k in VALID_OPTIONS:
-                    setattr(self, k, v)
+    def set_options(self, **kwargs: dict[str, str | bool | int]) -> None:
+        """Set options.
+
+        Parameters
+        ----------
+        **kwargs : dict[str, str | bool | int]
+            Keyword arguments. See :py:attr:`config.VALID_OPTIONS`.
+
+        Raises
+        ------
+        KeyError
+            If a passed option (keyword argument) isn't a valid option.
+        TypeError
+            If a passed option (keyword argument) is of the wrong type.
+        """
+        for k, v in kwargs.items():
+            if k not in config.VALID_OPTIONS:
+                raise KeyError(
+                    f"""'{k}' option doesn't exist. '{repr(config.VALID_OPTIONS[k]["typ"])}'"""
+                )
+
+            if not isinstance(v, config.VALID_OPTIONS[k]["typ"]):
+                raise TypeError(
+                    f"""'{k}' option should be of type '{repr(config.VALID_OPTIONS[k]["typ"])}'"""
+                )
+
+            setattr(self, k, v)
 
     def feed(self, data: str) -> None:
+        """Feed some text to the parser.
+
+        Parameters
+        ----------
+        data : str
+            Text to be parsed.
+        """
         data = data.replace("</' + 'script>", "</ignore>")
         super().feed(data)
 
     def handle(self, data: str) -> str:
+        """Main method to convert HTML into Markdown text.
+
+        Parameters
+        ----------
+        data : str
+            Text to be converted.
+
+        Returns
+        -------
+        str
+            Converted text.
+        """
         self.feed(data)
         self.feed("")
         markdown = self.optwrap(self.finish())
@@ -201,36 +307,59 @@ class HTML2Text(html.parser.HTMLParser):
             return markdown
 
     def outtextf(self, s: str) -> None:
+        """Summary
+
+        Parameters
+        ----------
+        s : str
+            String to append to output storage list.
+        """
         self.outtextlist.append(s)
         if s:
             self.lastWasNL = s[-1] == "\n"
 
     def finish(self) -> str:
+        """Summary
+
+        Returns
+        -------
+        str
+            Description
+        """
         self.close()
 
         self.pbr()
         self.o("", force="end")
 
-        outtext = "".join(self.outtextlist)
-
-        if self.unicode_snob:
-            nbsp = html.entities.html5["nbsp;"]
-        else:
-            nbsp = " "
+        outtext: str = "".join(self.outtextlist)
+        nbsp: str = html.entities.html5["nbsp;"] if self.unicode_snob else " "
         outtext = outtext.replace("&nbsp_place_holder;", nbsp)
 
-        # Clear self.outtextlist to avoid memory leak of its content to
-        # the next handling.
+        # Clear self.outtextlist to avoid memory leak of its content to the next handling.
         self.outtextlist = []
         self.reset()
 
         return outtext
 
     def handle_charref(self, c: str) -> None:
+        """See :py:meth:`HTMLParser.handle_charref`.
+
+        Parameters
+        ----------
+        c : str
+            Description
+        """
         self.handle_data(self.charref(c), True)
 
     def handle_entityref(self, c: str) -> None:
-        ref = self.entityref(c)
+        """See :py:meth:`HTMLParser.handle_entityref`.
+
+        Parameters
+        ----------
+        c : str
+            Description
+        """
+        ref: str = self.entityref(c)
 
         # ref may be an empty string (e.g. for &lrm;/&rlm; markers that should
         # not contribute to the final output).
@@ -241,24 +370,46 @@ class HTML2Text(html.parser.HTMLParser):
         if ref:
             self.handle_data(ref, True)
 
-    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        """See :py:meth:`HTMLParser.handle_starttag`.
+
+        Parameters
+        ----------
+        tag : str
+            Description
+        attrs : list[tuple[str, str | None]]
+            Description
+        """
         self.handle_tag(tag, dict(attrs), start=True)
 
     def handle_endtag(self, tag: str) -> None:
+        """See :py:meth:`HTMLParser.handle_endtag`.
+
+        Parameters
+        ----------
+        tag : str
+            Description
+        """
         self.handle_tag(tag, {}, start=False)
 
-    def previousIndex(self, attrs: Dict[str, Optional[str]]) -> Optional[int]:
-        """
-        :type attrs: dict
+    def previousIndex(self, attrs: dict[str, str | None]) -> int | None:
+        """Previous index.
 
-        :returns: The index of certain set of attributes (of a link) in the
-        self.a list. If the set of attributes is not found, returns None
-        :rtype: int
+        Parameters
+        ----------
+        attrs : dict[str, str | None]
+            Description
+
+        Returns
+        -------
+        int | None
+            The index of certain set of attributes (of a link) in the self.a list.
+            If the set of attributes is not found, returns :py:class:`None`.
         """
         if "href" not in attrs:
             return None
 
-        match = False
+        match: bool = False
         for i, a in enumerate(self.a):
             if "href" in a.attrs and a.attrs["href"] == attrs["href"]:
                 if "title" in a.attrs or "title" in attrs:
@@ -276,26 +427,34 @@ class HTML2Text(html.parser.HTMLParser):
         return None
 
     def handle_emphasis(
-        self, start: bool, tag_style: Dict[str, str], parent_style: Dict[str, str]
+        self, start: bool, tag_style: dict[str, str], parent_style: dict[str, str]
     ) -> None:
+        """Handles various text emphases.
+
+        Parameters
+        ----------
+        start : bool
+            Description
+        tag_style : dict[str, str]
+            Description
+        parent_style : dict[str, str]
+            Description
         """
-        Handles various text emphases
-        """
-        tag_emphasis = google_text_emphasis(tag_style)
-        parent_emphasis = google_text_emphasis(parent_style)
+        tag_emphasis: list[str] = google_text_emphasis(tag_style)
+        parent_emphasis: list[str] = google_text_emphasis(parent_style)
 
         # handle Google's text emphasis
-        strikethrough = "line-through" in tag_emphasis and self.hide_strikethrough
+        strikethrough: bool = "line-through" in tag_emphasis and self.hide_strikethrough
 
         # google and others may mark a font's weight as `bold` or `700`
-        bold = False
+        bold: bool = False
         for bold_marker in config.BOLD_TEXT_STYLE_VALUES:
             bold = bold_marker in tag_emphasis and bold_marker not in parent_emphasis
             if bold:
                 break
 
-        italic = "italic" in tag_emphasis and "italic" not in parent_emphasis
-        fixed = (
+        italic: bool = "italic" in tag_emphasis and "italic" not in parent_emphasis
+        fixed: bool = (
             google_fixed_width_font(tag_style)
             and not google_fixed_width_font(parent_style)
             and not self.pre
@@ -348,9 +507,23 @@ class HTML2Text(html.parser.HTMLParser):
             if strikethrough:
                 self.quiet -= 1
 
-    def handle_tag(
-        self, tag: str, attrs: Dict[str, Optional[str]], start: bool
-    ) -> None:
+    def handle_tag(self, tag: str, attrs: dict[str, str | None], start: bool) -> None:
+        """Handle various HTML tags.
+
+        Parameters
+        ----------
+        tag : str
+            Description
+        attrs : dict[str, str | None]
+            Description
+        start : bool
+            Description
+
+        Returns
+        -------
+        None
+            Description
+        """
         self.current_tag = tag
 
         if self.tag_callback is not None:
@@ -374,16 +547,15 @@ class HTML2Text(html.parser.HTMLParser):
             # need the attributes of the parent nodes in order to get a
             # complete style description for the current element. we assume
             # that google docs export well formed html.
-            parent_style = {}  # type: Dict[str, str]
+            parent_style: dict[str, str] = {}
+            tag_style: dict = {}
             if start:
                 if self.tag_stack:
                     parent_style = self.tag_stack[-1][2]
                 tag_style = element_style(attrs, self.style_def, parent_style)
                 self.tag_stack.append((tag, attrs, tag_style))
             else:
-                dummy, attrs, tag_style = (
-                    self.tag_stack.pop() if self.tag_stack else (None, {}, {})
-                )
+                dummy, attrs, tag_style = self.tag_stack.pop() if self.tag_stack else (None, {}, {})
                 if self.tag_stack:
                     parent_style = self.tag_stack[-1][2]
 
@@ -444,9 +616,14 @@ class HTML2Text(html.parser.HTMLParser):
                 self.p()
 
         def no_preceding_space(self: HTML2Text) -> bool:
-            return bool(
-                self.preceding_data and re.match(r"[^\s]", self.preceding_data[-1])
-            )
+            """Summary
+
+            Returns
+            -------
+            bool
+                Description
+            """
+            return bool(self.preceding_data and re.match(r"[^\s]", self.preceding_data[-1]))
 
         if tag in ["em", "i", "u"] and not self.ignore_emphasis:
             if start and no_preceding_space(self):
@@ -508,6 +685,15 @@ class HTML2Text(html.parser.HTMLParser):
             self.quote = not self.quote
 
         def link_url(self: HTML2Text, link: str, title: str = "") -> None:
+            """Summary
+
+            Parameters
+            ----------
+            link : str
+                Description
+            title : str, optional
+                Description
+            """
             url = urlparse.urljoin(self.baseurl, link)
             title = ' "{}"'.format(title) if title.strip() else ""
             self.o("]({url}{title})".format(url=escape_md(url), title=title))
@@ -599,9 +785,7 @@ class HTML2Text(html.parser.HTMLParser):
                     self.o("![" + escape_md(alt) + "]")
                     if self.inline_links:
                         href = attrs.get("href") or ""
-                        self.o(
-                            "(" + escape_md(urlparse.urljoin(self.baseurl, href)) + ")"
-                        )
+                        self.o("(" + escape_md(urlparse.urljoin(self.baseurl, href)) + ")")
                     else:
                         i = self.previousIndex(attrs)
                         if i is not None:
@@ -728,26 +912,36 @@ class HTML2Text(html.parser.HTMLParser):
                     self.out("\n```")
             self.p()
 
-    # TODO: Add docstring for these one letter functions
     def pbr(self) -> None:
-        "Pretty print has a line break"
+        """Pretty print has a line break."""
         if self.p_p == 0:
             self.p_p = 1
 
     def p(self) -> None:
-        "Set pretty print to 1 or 2 lines"
+        """Set pretty print to 1 or 2 lines."""
         self.p_p = 1 if self.single_line_break else 2
 
     def soft_br(self) -> None:
-        "Soft breaks"
+        """Soft breaks."""
         self.pbr()
         self.br_toggle = "  "
 
-    def o(
-        self, data: str, puredata: bool = False, force: Union[bool, str] = False
-    ) -> None:
-        """
-        Deal with indentation and whitespace
+    def o(self, data: str, puredata: bool = False, force: bool | str = False) -> None:
+        """Deal with indentation and whitespace.
+
+        Parameters
+        ----------
+        data : str
+            Description
+        puredata : bool, optional
+            Description
+        force : bool | str, optional
+            Description
+
+        Returns
+        -------
+        None
+            Description
         """
         if self.abbr_data is not None:
             self.abbr_data += data
@@ -821,9 +1015,7 @@ class HTML2Text(html.parser.HTMLParser):
                     self.out(" ")
                 self.space = False
 
-            if self.a and (
-                (self.p_p == 2 and self.links_each_paragraph) or force == "end"
-            ):
+            if self.a and ((self.p_p == 2 and self.links_each_paragraph) or force == "end"):
                 if force == "end":
                     self.out("\n")
 
@@ -858,6 +1050,20 @@ class HTML2Text(html.parser.HTMLParser):
             self.outcount += 1
 
     def handle_data(self, data: str, entity_char: bool = False) -> None:
+        """Summary
+
+        Parameters
+        ----------
+        data : str
+            Description
+        entity_char : bool, optional
+            Description
+
+        Returns
+        -------
+        None
+            Description
+        """
         if not data:
             # Data may be empty for some HTML entities. For example,
             # LEFT-TO-RIGHT MARK.
@@ -882,11 +1088,7 @@ class HTML2Text(html.parser.HTMLParser):
 
         if self.maybe_automatic_link is not None:
             href = self.maybe_automatic_link
-            if (
-                href == data
-                and self.absolute_url_matcher.match(href)
-                and self.use_automatic_links
-            ):
+            if href == data and self.absolute_url_matcher.match(href) and self.use_automatic_links:
                 self.o("<" + data + ">")
                 self.empty_link = False
                 return
@@ -901,10 +1103,19 @@ class HTML2Text(html.parser.HTMLParser):
         self.o(data, puredata=True)
 
     def charref(self, name: str) -> str:
-        if name[0] in ["x", "X"]:
-            c = int(name[1:], 16)
-        else:
-            c = int(name)
+        """Summary
+
+        Parameters
+        ----------
+        name : str
+            Description
+
+        Returns
+        -------
+        str
+            Description
+        """
+        c: int = int(name[1:], 16) if name[0] in ["x", "X"] else int(name)
 
         if not self.unicode_snob and c in unifiable_n:
             return unifiable_n[c]
@@ -915,6 +1126,18 @@ class HTML2Text(html.parser.HTMLParser):
                 return ""
 
     def entityref(self, c: str) -> str:
+        """Summary
+
+        Parameters
+        ----------
+        c : str
+            Description
+
+        Returns
+        -------
+        str
+            Description
+        """
         if not self.unicode_snob and c in config.UNIFIABLE:
             return config.UNIFIABLE[c]
         try:
@@ -923,33 +1146,43 @@ class HTML2Text(html.parser.HTMLParser):
             return "&" + c + ";"
         return config.UNIFIABLE[c] if c == "nbsp" else ch
 
-    def google_nest_count(self, style: Dict[str, str]) -> int:
-        """
-        Calculate the nesting count of google doc lists
+    def google_nest_count(self, style: dict[str, str]) -> int:
+        """Calculate the nesting count of Google doc lists.
 
-        :type style: dict
+        Parameters
+        ----------
+        style : dict[str, str]
+            Description
 
-        :rtype: int
+        Returns
+        -------
+        int
+            Description
         """
-        nest_count = 0
+        nest_count: int = 0
         if "margin-left" in style:
             nest_count = int(style["margin-left"][:-2]) // self.google_list_indent
 
         return nest_count
 
     def optwrap(self, text: str) -> str:
-        """
-        Wrap all paragraphs in the provided text.
+        """Wrap all paragraphs in the provided text.
 
-        :type text: str
+        Parameters
+        ----------
+        text : str
+            Description
 
-        :rtype: str
+        Returns
+        -------
+        str
+            Description
         """
         if not self.body_width:
             return text
 
-        result = ""
-        newlines = 0
+        result: str = ""
+        newlines: int = 0
         # I cannot think of a better solution for now.
         # To avoid the non-wrap behaviour for entire paras
         # because of the presence of a link in it
@@ -967,7 +1200,7 @@ class HTML2Text(html.parser.HTMLParser):
                         # blockquote continuation: add the greater than symbol
                         # to the new lines
                         indent = "> "
-                    wrapped = wrap(
+                    wrapped: list[str] = wrap(
                         para,
                         self.body_width,
                         break_long_words=False,
@@ -998,9 +1231,21 @@ class HTML2Text(html.parser.HTMLParser):
         return result
 
 
-def html2text(html: str, baseurl: str = "", bodywidth: Optional[int] = None) -> str:
-    if bodywidth is None:
-        bodywidth = config.BODY_WIDTH
-    h = HTML2Text(baseurl=baseurl, bodywidth=bodywidth)
+def html2text(html: str, **kwargs) -> str:
+    """Turn HTML into equivalent Markdown-structured text.
+
+    Parameters
+    ----------
+    html : str
+        HTML to convert.
+    **kwargs : dict[str, Union[str, bool, int]]
+        Keyword arguments. See :py:attr:`config.VALID_OPTIONS`.
+
+    Returns
+    -------
+    str
+        Converted Markdown text.
+    """
+    h = HTML2Text(**kwargs)
 
     return h.handle(html)
