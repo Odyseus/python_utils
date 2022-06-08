@@ -92,7 +92,7 @@ def stop_server(
     server_args : dict[str, str | int], optional
         Server arguments.
     logger : logging_system.Logger, optional
-        See :any:`LogSystem`.
+        The logger.
 
     Returns
     -------
@@ -138,7 +138,7 @@ def handle_server(
     server_args : dict[str, str | int], optional
         Server arguments.
     logger : logging_system.Logger, optional
-        See :any:`LogSystem`.
+        The logger.
     """
     if action == "start":
         start_server(server_args=server_args)

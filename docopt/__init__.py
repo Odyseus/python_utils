@@ -280,12 +280,6 @@ def docopt(
      'serial': False,
      'tcp': True}
 
-    See also
-    --------
-    - For video introduction see http://docopt.org.
-    - Full documentation is available in README.rst as well as online \
-    at https://github.com/docopt/docopt#readme
-
     """
     argv = sys.argv[1:] if argv is None else argv
     usage_sections: list[str] = parse_section("usage", doc)

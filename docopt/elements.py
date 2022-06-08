@@ -115,15 +115,7 @@ def transform(pattern: BranchPattern) -> Either:
 
 class LeafPattern(Pattern):
 
-    """Leaf/terminal node of a pattern tree.
-
-    Deleted Attributes
-    ------------------
-    name : TYPE
-        Description
-    value : TYPE
-        Description
-    """
+    """Leaf/terminal node of a pattern tree."""
 
     def __repr__(self) -> str:
         """See :py:meth:`object.__repr__`.
