@@ -173,6 +173,7 @@ def ordered_dump(data: OrderedDict, stream: IO | None = None, **kwargs) -> str |
     b: ''
     c: ''
     d: ''
+    <BLANKLINE>
 
     >>> obj_sorted = OrderedDict(sorted(obj.items(), key=lambda k: k[0].casefold()))
     >>> print(yaml_utils.ordered_dump(obj_sorted))
@@ -184,6 +185,7 @@ def ordered_dump(data: OrderedDict, stream: IO | None = None, **kwargs) -> str |
     C: ''
     d: ''
     D: ''
+    <BLANKLINE>
 
     """
     return yaml.dump(data, stream=stream, Dumper=OrderedDumper, **kwargs)
